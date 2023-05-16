@@ -35,13 +35,15 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/kyle-n/HighlightedTextEditor", "2.1.0"..<"3.0.0")
+        .package(url: "https://github.com/kyle-n/HighlightedTextEditor", "2.1.0"..<"3.0.0"),
+        .package(url: "https://github.com/gdbing/SwiftChatGPT", "1.1.0"..<"2.0.0")
     ],
     targets: [
         .executableTarget(
             name: "AppModule",
             dependencies: [
-                .product(name: "HighlightedTextEditor", package: "HighlightedTextEditor")
+                .product(name: "HighlightedTextEditor", package: "HighlightedTextEditor"),
+                .product(name: "SwiftChatGPT", package: "SwiftChatGPT")
             ],
             path: ".",
             swiftSettings: [

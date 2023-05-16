@@ -8,6 +8,15 @@
         "revision" : "7069ede002afc6bde867aef7035f45ff72dc839c",
         "version" : "2.1.0"
       }
+    },
+    {
+      "identity" : "swiftchatgpt",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gdbing/SwiftChatGPT",
+      "state" : {
+        "revision" : "7fc039fef03ec365744fa07fac96cceddc4499e9",
+        "version" : "1.1.0"
+      }
     }
   ],
   "version" : 2
