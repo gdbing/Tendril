@@ -5,7 +5,7 @@ let betweenVs = try! NSRegularExpression(pattern: "^vvv[\\s\\S]*?\\R\\^\\^\\^$\\
 let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^\\^\\^", options: [])
 
 struct ContentView: View {
-    @State private var text: String = ""    
+    @State private var text: String = ""
     
     private let rules: [HighlightRule] = [
         HighlightRule(pattern: betweenVs, formattingRules: [
@@ -17,9 +17,12 @@ struct ContentView: View {
     ]
     
     var body: some View {
+        @ScaledMetric(relativeTo: .body) var maxWidth = 720
         VStack {
             HighlightedTextEditor(text: $text, highlightRules: rules + .markdown)
                 .padding()
+                .frame(idealWidth: 150, maxWidth: maxWidth, alignment: .center)
+                .font(.body)
             // optional modifiers
 //                .onCommit { print("commited") }
 //                .onEditingChanged { print("editing changed") }
