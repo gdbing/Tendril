@@ -1,9 +1,5 @@
 import SwiftUI
 import SwiftChatGPT
-import HighlightedTextEditor
-
-let betweenVs = try! NSRegularExpression(pattern: "^vvv[\\s\\S]*?\\R\\^\\^\\^$\\R?", options: [.anchorsMatchLines])
-let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^\\^\\^", options: [])
 
 struct ContentView: View {
     private let chatGPT = ChatGPT(key: "")
@@ -13,38 +9,31 @@ struct ContentView: View {
     @AppStorage("isGPT4") private var isGPT4: Bool = false
 
     @State private var text: String = ""
-    @ScaledMetric(relativeTo: .body) var maxWidth = 720    
-
-    private let rules: [HighlightRule] = [
-        HighlightRule(pattern: betweenVs, formattingRules: [
-            TextFormattingRule(key: .foregroundColor, value: UIColor.secondaryLabel)
-        ]),
-        HighlightRule(pattern: aboveCarats, formattingRules: [
-            TextFormattingRule(key: .foregroundColor, value: UIColor.secondaryLabel)
-        ]),
-    ]
     
     var body: some View {
         VStack {
-            HighlightedTextEditor(text: $text, highlightRules: rules + .markdown)
-                .padding()
-                .frame(maxWidth: maxWidth, alignment: .center)
-                .font(.body)
-            // optional modifiers
-//                .onCommit { print("commited") }
-//                .onEditingChanged { print("editing changed") }
-//                .onTextChange { print("latest text value", $0) }
-//                .onSelectionChange { (range: NSRange) in
-//                    print(range)
-//                }
-//                .introspect { editor in
-//                    // access underlying UITextView or NSTextView
-//                    editor.textView.backgroundColor = .systemBackground
-//                }
+            DocumentView(text: $text)
             Button("append uneaten", action: {
                 let uneaten = text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
-                text.append(uneaten)
+                do {
+                    Task {
+                        switch await self.chatGPT.streamChatText(query: uneaten) {
+                        case .failure(let error):
+                            self.text.append("\nCommunication Error:\n\(error.description)")
+                            return
+                        case .success(let results):
+                            for try await result in results {
+                                if let result {
+                                    self.text.append(result)
+                                }
+                            }
+                            self.text.append("\n")
+                        }
+                    }
+                }
+
             })
+            .buttonStyle(.bordered)
         }
         .onAppear {
             self.chatGPT.key = apiKey
