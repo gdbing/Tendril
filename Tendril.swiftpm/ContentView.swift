@@ -2,6 +2,7 @@ import SwiftUI
 import HighlightedTextEditor
 
 let betweenVs = try! NSRegularExpression(pattern: "^vvv[\\s\\S]*?\\R\\^\\^\\^$\\R?", options: [.anchorsMatchLines])
+let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^\\^\\^", options: [])
 
 struct ContentView: View {
     @State private var text: String = ""    
@@ -9,7 +10,10 @@ struct ContentView: View {
     private let rules: [HighlightRule] = [
         HighlightRule(pattern: betweenVs, formattingRules: [
             TextFormattingRule(key: .foregroundColor, value: UIColor.secondaryLabel)
-        ])
+        ]),
+        HighlightRule(pattern: aboveCarats, formattingRules: [
+            TextFormattingRule(key: .foregroundColor, value: UIColor.secondaryLabel)
+        ]),
     ]
     
     var body: some View {
