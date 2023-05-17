@@ -8,13 +8,13 @@ import PackageDescription
 import AppleProductTypes
 
 let package = Package(
-    name: "Text View",
+    name: "Tendril",
     platforms: [
         .iOS("16.0")
     ],
     products: [
         .iOSApplication(
-            name: "Text View",
+            name: "Tendril",
             targets: ["AppModule"],
             bundleIdentifier: "com.gdb.tendril",
             teamIdentifier: "9VV558X8J3",
