@@ -7,30 +7,23 @@ struct ContentView: View {
     @Binding var document: TextDocument
     
     @State private var settings: Settings = Settings()
+    @StateObject private var settings: Settings = Settings()
     @State private var showingSettings: Bool = false
     
     var body: some View {
-        VStack {
-            DocumentView(text: $document.text)
-            HStack {
-                Button("settings", action: {
-                    self.showingSettings = true
-                })
-                .buttonStyle(.bordered)
-                Button("append uneaten", action: {
-                    GPTify()                    
-                })
-                .buttonStyle(.bordered)
-            }
+        TextEditor(text: $document.text)
+            .frame(maxWidth: 720, alignment: .center)
+            .padding()
+//        DocumentView(text: $document.text)
             .onAppear {
-                //            self.chatGPT.key = apiKey
+//                self.chatGPT.key = apiKey
                 self.chatGPT.model = settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo"
                 self.chatGPT.temperature = Float(settings.temperature)
                 self.chatGPT.systemMessage = settings.systemMessage
             }
-//            .onChange(of: apiKey, perform: { newValue in
-//                //            self.chatGPT.key = newValue
-//            })
+            .onChange(of: settings.apiKey, perform: { newValue in
+//                self.chatGPT.key = newValue
+            })
             .onChange(of: settings.isGPT4, perform: { newValue in
                 self.chatGPT.model = newValue ? "gpt-4" : "gpt-3.5-turbo"
             })
@@ -41,21 +34,28 @@ struct ContentView: View {
                 self.chatGPT.systemMessage = newValue
             })
             .sheet(isPresented: $showingSettings) {
-//                NavigationView {
-                    SettingsView(settings: $settings)
-                        .padding()
-//                }
-                        .toolbar {
-                            ToolbarItem(placement: .primaryAction) {
-                                Button(action: {
-                                    showingSettings = false
-                                }) {
-                                    Text("Done").fontWeight(.semibold)
-                                }
-                            }
-                        }
+                SettingsView()
+                    .environmentObject(settings)
+                    .padding()
             }
-        }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        self.showingSettings = true
+                    }, label: {
+                        Image(systemName: "gear")
+                    })
+                    .keyboardShortcut(",", modifiers: [.command]) 
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: {
+                        GPTify()
+                    }, label: {
+                        Image(systemName: "bubble.left")
+                    })
+                    .keyboardShortcut(.return, modifiers: [.command]) 
+                }
+            }
     }
     
     func GPTify() {
@@ -77,6 +77,15 @@ struct ContentView: View {
                     }
                 }
             }
+        }
+    }
+}
+
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        let doc = TextDocument(text: "hello world")
+        NavigationStack {
+            ContentView(document: .constant(doc))
         }
     }
 }
