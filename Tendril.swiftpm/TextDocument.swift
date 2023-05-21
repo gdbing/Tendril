@@ -7,7 +7,7 @@ struct TextDocument: FileDocument {
     init(text: String = "") {
         self.text = text
     }
-
+    
     static var readableContentTypes: [UTType] { [.plainText] }
 
     init(configuration: ReadConfiguration) throws {
@@ -22,5 +22,22 @@ struct TextDocument: FileDocument {
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         let data = text.data(using: .utf8)!
         return .init(regularFileWithContents: data)
+    }
+}
+
+class Appender {
+    private var buffer: String = ""
+    private var timer: Timer?
+        
+    func append(_ text: String, interval: TimeInterval = 1.0, reply: @escaping (inout String) -> Void) {
+        self.buffer += text
+
+        if self.timer == nil {
+            timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false, block: { [self] _ in
+                reply(&buffer)
+                self.buffer = ""
+                self.timer = nil
+            })
+        }
     }
 }

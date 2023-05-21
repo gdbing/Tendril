@@ -1,5 +1,31 @@
 import SwiftUI
 
+typealias Persona = [String: String]
+extension Persona {
+    init(name: String, message: String, id: UUID = UUID()) {
+        self.init()
+        self["name"] = name
+        self["message"] = message
+        self["id"] = id.uuidString
+    }
+    
+    var name: String {
+        get { self["name"] ?? ""}
+        set { self["name"] = newValue }
+    }
+    var message: String {
+        get { self["message"] ?? "" }
+        set { self["message"] = newValue }
+    }
+    var id: String {
+        get { self["id"] ?? "" }
+    }
+}
+
+extension Persona {
+    static let defaultPersona = Persona(name: "Default", message: "You are a helpful assistant")
+}
+
 class Settings: ObservableObject {
     @AppStorage("apiKey") 
     var apiKey: String = "" {
@@ -27,7 +53,7 @@ class Settings: ObservableObject {
             }
         }
     }
-
+    
     @AppStorage("isGPT4") 
     var isGPT4: Bool = false {
         willSet {
@@ -36,48 +62,22 @@ class Settings: ObservableObject {
             }
         }
     }
-}
-
-struct SettingsView: View {
-    @EnvironmentObject var settings: Settings
     
-    var body: some View {
-        VStack {
-            Form {
-                HStack {
-                    Text("API Key:")
-                    SecureField("API Key", text: $settings.apiKey)  
-                } 
-                HStack {
-                    Text(String(format: "Temperature %.1f°", settings.temperature))
-                        .monospacedDigit()
-                    Slider(value: $settings.temperature, in: 0...2, step: 0.1)
-                }
-                Toggle("GPT4", isOn: $settings.isGPT4)
-                //            }
-                VStack(alignment:.leading) {
-                    ZStack(alignment: .topLeading) {
-                        Text("System Message:")
-                            .font(.caption)
-                        Text(settings.systemMessage)
-                            .padding(.top, 18.5)
-                            .padding(.horizontal, 5)
-//                            .hidden()
-                        TextEditor(text: $settings.systemMessage)
-                            .padding(.top, 10)
-                    }
-                }
-            }
+    @Published var selectedPersona: Persona {
+        didSet {
+            UserDefaults().setValue(selectedPersona, forKey: "selectedPersona")
         }
     }
-}
-
-extension Settings {
-    static let preview = Settings()
-}
-struct SettingsView_Previews: PreviewProvider {
-    static var previews: some View {
-        SettingsView()
-            .environmentObject(Settings.preview)
+    
+    @Published var personae: [Persona] {
+        didSet {
+            UserDefaults().setValue(personae, forKey: "personae")
+            print("didSet personae")
+        }
+    }
+    
+    init() {
+        self.selectedPersona = UserDefaults().dictionary(forKey: "selectedPersona") as? Persona ?? Persona.defaultPersona
+        self.personae = UserDefaults().array(forKey: "personae") as? [Persona] ?? [Persona.defaultPersona]
     }
 }

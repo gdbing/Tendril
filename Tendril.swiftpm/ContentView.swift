@@ -6,23 +6,19 @@ struct ContentView: View {
     
     @Binding var document: TextDocument
     
-    @State private var settings: Settings = Settings()
     @StateObject private var settings: Settings = Settings()
     @State private var showingSettings: Bool = false
-    
+            
     var body: some View {
-        TextEditor(text: $document.text)
-            .frame(maxWidth: 720, alignment: .center)
-            .padding()
-//        DocumentView(text: $document.text)
+        DocumentView(text: $document.text)
             .onAppear {
-//                self.chatGPT.key = apiKey
+                self.chatGPT.key = settings.apiKey
                 self.chatGPT.model = settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo"
                 self.chatGPT.temperature = Float(settings.temperature)
                 self.chatGPT.systemMessage = settings.systemMessage
             }
             .onChange(of: settings.apiKey, perform: { newValue in
-//                self.chatGPT.key = newValue
+                self.chatGPT.key = newValue
             })
             .onChange(of: settings.isGPT4, perform: { newValue in
                 self.chatGPT.model = newValue ? "gpt-4" : "gpt-3.5-turbo"
@@ -59,6 +55,7 @@ struct ContentView: View {
     }
     
     func GPTify() {
+        let appender = Appender()
         let uneaten = self.document.text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
         DispatchQueue.main.async {
             do {
@@ -70,10 +67,13 @@ struct ContentView: View {
                     case .success(let results):
                         for try await result in results {
                             if let result {
-                                self.document.text.append(result)
+                                DispatchQueue.main.async {
+                                    appender.append(result, interval: 0.5) { buffer in
+                                        self.document.text.append(buffer)
+                                    }
+                                }
                             }
                         }
-                        self.document.text.append("\n")
                     }
                 }
             }
