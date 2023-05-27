@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var settings: Settings
+    @State var newPersona: Persona = Persona()
     
     var body: some View {
         NavigationStack {
@@ -19,114 +20,171 @@ struct SettingsView: View {
                 Section(header: Text("Model")) {
                     Toggle("GPT4", isOn: $settings.isGPT4)
                 }
-                NavigationLink("Persona: \(settings.selectedPersona.name)", destination: PersonaeView(personae: $settings.personae, selectedPersona: $settings.selectedPersona))
+                Section(header: Text("Persona")) {
+                    ForEach($settings.personae) { $persona in
+                        PersonaNavLink(persona: $persona)
+                    }
+                    let newView = PersonaView(name: $newPersona.name,
+                                              message: $newPersona.message,
+                                              isStarred: $newPersona.isSelected)
+                        .onDisappear(perform: {
+                            if newPersona.name.count > 0, newPersona.message.count > 0 {
+                                settings.personae.append(newPersona)
+                            }
+                            newPersona = Persona()
+                        })
+                    NavigationLink(destination: newView) {
+                        Text("New Persona")
+                    }
+                }
             }
         }
     }
     
-    private struct PersonaeView: View {
-        @Binding var personae: [Persona]
-        @Binding var selectedPersona: Persona
+    private struct PersonaNavLink: View {
+        @Binding var persona: Persona
+        @EnvironmentObject var settings: Settings
+
+        func toggleStar() {
+            for index in settings.personae.indices {
+                settings.personae[index].isSelected = false
+            }
+            persona.isSelected = true
+        }
+        func delete() {
+            let isSelected = persona.isSelected
+            
+            settings.personae.removeAll(where: { $0.id == persona.id })
+            
+            if settings.personae.count == 0 {
+                var defaultPersona = Persona.defaultPersona
+                defaultPersona.isSelected = true
+                settings.personae = [defaultPersona]
+            } else if isSelected {
+                let index = settings.personae.startIndex
+                settings.personae[index].isSelected = true
+            }
+        }
+        
         var body: some View {
-            List {
-                ForEach($personae, id: \.self) { $persona in
-                    NavigationLink(destination: PersonaView(persona: $persona, selectedPersona: $selectedPersona), label: {
-                        HStack {
-                            if persona == selectedPersona {
-                                Image(systemName: "star.fill")
-                                    .foregroundColor(.yellow)
-                            } else {
-                                Image(systemName: "star.fill")
-                                    .hidden()
-                            }
-                            VStack(alignment: .leading) {
-                                
-                                Text(persona.name)
-                                Text(persona.message)
-                                    .lineLimit(1)
-                                    .font(.caption)
-                            }
-                        }
-                    })
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive, action: {
-                            // TODO
-                            // if starred item, top item is starred now
-                            // if last item, create default item
-                            print("nom nom")
-                        }) {
-                            Text("Delete")
-                        }
+            let dest = PersonaView(name: $persona.name, 
+                                   message: $persona.message,
+                                   isStarred: $persona.isSelected)
+            NavigationLink(destination: dest) {
+                HStack {
+                    if persona.isSelected {
+                        Image(systemName: "star.fill")
+                            .foregroundColor(.yellow)
+                    } else {
+                        Image(systemName: "star.fill")
+                            .hidden()
                     }
-                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                        Button(action: {
-                            // TODO
-                            print("⭐️")
-                        }) {
-                            Text("Star")
-                        }
-                    }
-                    .contextMenu {
-                        Button {
-                            // TODO
-                        } label: {
-                            Label("do thing", systemImage: "star")
-                        }
-                        .disabled(persona == selectedPersona)
-                        Button {
-                            // TODO
-                        } label: {
-                            Label("another thing", systemImage: "house")
-                        }
-                        Button(role: .destructive) {
-                            print("nom nom")
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                        
+                    VStack(alignment: .leading) {
+                        Text(persona.name)
+                        Text(persona.message)
+                            .lineLimit(1)
+                            .font(.caption)
                     }
                 }
-            }
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("New Persona", action: {
-                        
-                    })
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive, action: {
+                        self.delete()
+                    }) {
+                        Text("Delete")
+                    }
+                }
+                .tint(.red)
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    Button(action: {
+                        toggleStar()
+                    }) {
+                        Image(systemName: "star")
+                    }
+                    .disabled(persona.isSelected)
+                }
+                .tint(.yellow)
+                .contextMenu {
+                    Button {
+                        toggleStar()
+                    } label: {
+                        Label("", systemImage: "star")
+                    }
+                    .disabled(persona.isSelected)
+                    Button {
+                        var dup = persona
+                        dup.id = UUID()
+                        if let index = settings.personae.firstIndex(of: persona) {
+                            settings.personae.insert(dup, at: index.advanced(by: 1))
+                        }
+                    } label: {
+                        Label("Duplicate", systemImage: "plus.square.on.square")
+                    }
+                    Button(role: .destructive) {
+                        self.delete()
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                    
                 }
             }
         }
     }
+    
+    private struct NewPersonaNavLink: View {
+        @State var persona: Persona = Persona()
+        @EnvironmentObject var settings: Settings
+
+        var body: some View {
+            let dest = PersonaView(name: $persona.name, 
+                                   message: $persona.message, 
+                                   isStarred: $persona.isSelected)
+                .onDisappear(perform: {
+                    if persona.message.count > 0 {
+                        settings.personae.append(persona)
+                    }
+                })
+            NavigationLink(destination: dest) {
+                Text("New Persona")
+            }
+        }
+    }
+
     private struct PersonaView: View {
-        @Binding var persona: Persona
-        @Binding var selectedPersona: Persona
-        @State var otherText: String = ""
+        @Binding var name: String
+        @Binding var message: String
+        @Binding var isStarred: Bool
         
         var body: some View {
             Form {
                 Section(header: Text("Name")) {
-                    TextField("Name", text: $persona.name)
+                    TextField("Name", text: $name)
                 }
                 Section(header: Text("System Message")) {
-                    TextField("system message", text: $persona.message)
-                    TextEditor(text: $otherText)
+                    TextEditor(text: $message)
                         .frame(minHeight: 150)
                 }
             }
             .toolbar {
                 ToolbarItem(placement: .primaryAction, content: {
-                    Button {
-                        if persona != selectedPersona {
-                            selectedPersona = persona
-                        }
-                    } label: {
-                        if persona == selectedPersona {
-                            Image(systemName: "star.fill")
-                                .foregroundColor(.yellow)
-                        } else {
-                            Image(systemName: "star")
-                        }
-                    }
+                    Toggle("", isOn: $isStarred)
+                        .toggleStyle(StarToggleStyle())
                 })
+            }
+        }
+    }
+    private struct StarToggleStyle: ToggleStyle {
+        func makeBody(configuration: Self.Configuration) -> some View {
+            if configuration.isOn {
+                Image(systemName: "star.fill")
+                    .foregroundColor(.yellow)
+                    .onTapGesture {
+                        configuration.isOn.toggle()
+                    }
+            } else {
+                Image(systemName: "star")
+                    .onTapGesture {
+                        configuration.isOn.toggle()
+                    }
             }
         }
     }

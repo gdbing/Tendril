@@ -1,43 +1,19 @@
 import SwiftUI
 
-typealias Persona = [String: String]
-extension Persona {
-    init(name: String, message: String, id: UUID = UUID()) {
-        self.init()
-        self["name"] = name
-        self["message"] = message
-        self["id"] = id.uuidString
-    }
-    
-    var name: String {
-        get { self["name"] ?? ""}
-        set { self["name"] = newValue }
-    }
-    var message: String {
-        get { self["message"] ?? "" }
-        set { self["message"] = newValue }
-    }
-    var id: String {
-        get { self["id"] ?? "" }
-    }
+struct Persona: Identifiable, Codable, Hashable {
+    var name: String = ""
+    var message: String = ""
+    var id: UUID = UUID()
+    var isSelected: Bool = false
 }
 
 extension Persona {
-    static let defaultPersona = Persona(name: "Default", message: "You are a helpful assistant")
+    static let defaultPersona = Persona(name: "Default", message: "You are a helpful assistant", isSelected: true)
 }
 
 class Settings: ObservableObject {
     @AppStorage("apiKey") 
     var apiKey: String = "" {
-        willSet {
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
-        }
-    }
-    
-    @AppStorage("systemMessage") 
-    var systemMessage: String = "You are a helpful assistant" {
         willSet {
             DispatchQueue.main.async {
                 self.objectWillChange.send()
@@ -62,22 +38,28 @@ class Settings: ObservableObject {
             }
         }
     }
-    
-    @Published var selectedPersona: Persona {
-        didSet {
-            UserDefaults().setValue(selectedPersona, forKey: "selectedPersona")
-        }
-    }
-    
+        
     @Published var personae: [Persona] {
         didSet {
-            UserDefaults().setValue(personae, forKey: "personae")
-            print("didSet personae")
+            if let data = try? JSONEncoder().encode(personae) {
+                UserDefaults().setValue(data, forKey: "personae")
+            }
+        }
+    }
+
+    var systemMessage: String {
+        get {
+         personae.first(where: { $0.isSelected })?.message ?? "You are a helpful assistant"
         }
     }
     
+
     init() {
-        self.selectedPersona = UserDefaults().dictionary(forKey: "selectedPersona") as? Persona ?? Persona.defaultPersona
-        self.personae = UserDefaults().array(forKey: "personae") as? [Persona] ?? [Persona.defaultPersona]
+        if let data = UserDefaults.standard.data(forKey: "personae"), 
+            let decodedItems = try? JSONDecoder().decode([Persona].self, from: data) {
+                self.personae = decodedItems
+        } else {
+            self.personae = [Persona.defaultPersona]
+        }        
     }
 }
