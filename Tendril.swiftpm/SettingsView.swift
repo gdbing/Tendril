@@ -161,11 +161,21 @@ struct SettingsView: View {
                 }
                 Section(header: Text("System Message")) {
                     TextEditor(text: $message)
-                        .frame(minHeight: 150)
+                        .frame(minHeight: 150, maxHeight: 600)
                 }
             }
             .toolbar {
                 ToolbarItem(placement: .primaryAction, content: {
+//                    Button {
+//                        
+//                    } label: {
+//                        if isStarred {
+//                            Image(systemName: "star.fill")
+//                                .foregroundColor(.yellow)
+//                        } else {
+//                            Image(systemName: "star")
+//                        }
+//                    }
                     Toggle("", isOn: $isStarred)
                         .toggleStyle(StarToggleStyle())
                 })

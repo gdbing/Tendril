@@ -2,15 +2,18 @@ import SwiftUI
 import SwiftChatGPT
 
 struct ContentView: View {
-    private let chatGPT = ChatGPT(key: "")
-    
+    let chatGPT: ChatGPT
     @Binding var document: TextDocument
     
     @StateObject private var settings: Settings = Settings()
     @State private var showingSettings: Bool = false
-            
+    @State var uiTextView: UITextView? = nil
+
+    let betweenVs = try! NSRegularExpression(pattern: "^vvv[\\s\\S]*?\\R\\^\\^\\^$\\R?", options: [.anchorsMatchLines])
+    let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^\\^\\^\\R?", options: [])
+
     var body: some View {
-        DocumentView(text: $document.text)
+        DocumentView(text: $document.text, uiTextView: $uiTextView)
             .onAppear {
                 self.chatGPT.key = settings.apiKey
                 self.chatGPT.model = settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo"
@@ -70,6 +73,10 @@ struct ContentView: View {
                                 DispatchQueue.main.async {
                                     appender.append(result, interval: 0.5) { buffer in
                                         self.document.text.append(buffer)
+                                        if let textView = uiTextView {
+                                            let endRange = NSMakeRange(textView.text.count, 0)
+                                            textView.selectedRange = endRange
+                                        }
                                     }
                                 }
                             }
@@ -84,8 +91,9 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         let doc = TextDocument(text: "hello world")
+        let cgpt = ChatGPT(key: "")
         NavigationStack {
-            ContentView(document: .constant(doc))
+            ContentView(chatGPT: cgpt, document: .constant(doc))
         }
     }
 }
