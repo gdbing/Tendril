@@ -2,23 +2,30 @@ import SwiftUI
 import SwiftChatGPT
 
 struct ContentView: View {
+    private var documentView: DocumentView
     let chatGPT: ChatGPT
-    @Binding var document: TextDocument
+    init(document: Binding<TextDocument>) {
+        self.documentView = DocumentView(text: document.text)
+        self.chatGPT = ChatGPT(key: "")
+    }
     
     @StateObject private var settings: Settings = Settings()
     @State private var showingSettings: Bool = false
 
-    let betweenVs = try! NSRegularExpression(pattern: "^vvv[\\s\\S]*?\\R\\^\\^\\^$\\R?", options: [.anchorsMatchLines])
-    let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^\\^\\^\\R?", options: [])
-
     var body: some View {
-        DocumentView(text: $document.text)
-            .onAppear {
-                self.chatGPT.key = settings.apiKey
-                self.chatGPT.model = settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo"
-                self.chatGPT.temperature = Float(settings.temperature)
-                self.chatGPT.systemMessage = settings.systemMessage
-            }
+        GeometryReader { geometry in
+            documentView
+                .onAppear {
+                    self.chatGPT.key = settings.apiKey
+                    self.chatGPT.model = settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo"
+                    self.chatGPT.temperature = Float(settings.temperature)
+                    self.chatGPT.systemMessage = settings.systemMessage
+                    self.documentView.updateInsets(geometry.size.width)
+                }
+                .onChange(of: geometry.size, perform: { size in
+                    self.documentView.updateInsets(size.width)
+                })
+        }
             .onChange(of: settings.apiKey, perform: { newValue in
                 self.chatGPT.key = newValue
             })
@@ -45,14 +52,14 @@ struct ContentView: View {
                     })
                     .keyboardShortcut(",", modifiers: [.command]) 
                 }
-//                ToolbarItem(placement: .primaryAction) {
-//                    Button(action: {
-//                        GPTify()
-//                    }, label: {
-//                        Image(systemName: "bubble.left")
-//                    })
-//                    .keyboardShortcut(.return, modifiers: [.command]) 
-//                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: {
+                        documentView.GPTify(chatGPT: self.chatGPT)
+                    }, label: {
+                        Image(systemName: "bubble.left")
+                    })
+                    .keyboardShortcut(.return, modifiers: [.command]) 
+                }
             }
     }
 }
@@ -60,9 +67,8 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         let doc = TextDocument(text: "hello world")
-        let cgpt = ChatGPT(key: "")
         NavigationStack {
-            ContentView(chatGPT: cgpt, document: .constant(doc))
+            ContentView(document: .constant(doc))
         }
     }
 }
