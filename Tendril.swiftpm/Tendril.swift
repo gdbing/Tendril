@@ -5,7 +5,6 @@ import SwiftChatGPT
 struct Tendril: App {
     @State var document: TextDocument = TextDocument()
     private let chatGPT = ChatGPT(key: "")
-    @State private var text = ""
 
     var body: some Scene {
 //        WindowGroup {

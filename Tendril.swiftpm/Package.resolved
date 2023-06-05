@@ -1,30 +1,12 @@
 {
   "pins" : [
     {
-      "identity" : "highlightedtexteditor",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/kyle-n/HighlightedTextEditor",
-      "state" : {
-        "revision" : "7069ede002afc6bde867aef7035f45ff72dc839c",
-        "version" : "2.1.0"
-      }
-    },
-    {
       "identity" : "swiftchatgpt",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/gdbing/SwiftChatGPT",
       "state" : {
         "revision" : "7fc039fef03ec365744fa07fac96cceddc4499e9",
         "version" : "1.1.0"
-      }
-    },
-    {
-      "identity" : "swiftui-introspect",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/siteline/SwiftUI-Introspect",
-      "state" : {
-        "revision" : "5b3f3996c7a2a84d5f4ba0e03cd7d584154778f2",
-        "version" : "0.3.1"
       }
     }
   ],
