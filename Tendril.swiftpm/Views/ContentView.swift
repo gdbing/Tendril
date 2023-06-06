@@ -2,33 +2,29 @@ import SwiftUI
 import SwiftChatGPT
 
 struct ContentView: View {
-    private var documentView: DocumentView
-    let chatGPT: ChatGPT
-    @Binding var isGPTWriting: Bool
-    
-    init(document: Binding<TextDocument>, isWriting: Binding<Bool>) {
-        self.documentView = DocumentView(text: document.text, isGPTWriting: isWriting)
-        self.chatGPT = ChatGPT(key: "")
-        _isGPTWriting = isWriting
-    }
-    
-    @StateObject private var settings: Settings = Settings()
+    @Binding var document: TextDocument
+    let chatGPT: ChatGPT = ChatGPT(key: "")
+    @State var gptifier: GPTifier?
+//    @State var isGPTWriting: Bool = false
+//    @State var gptIfy: ((ChatGPT) -> Void)? = nil
+        
+    @EnvironmentObject private var settings: Settings
     @State private var showingSettings: Bool = false
 
     var body: some View {
-        GeometryReader { geometry in
-            documentView
+//        GeometryReader { geometry in
+        DocumentView(text: $document.text, gpt: $gptifier)
                 .onAppear {
                     self.chatGPT.key = settings.apiKey
                     self.chatGPT.model = settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo"
                     self.chatGPT.temperature = Float(settings.temperature)
                     self.chatGPT.systemMessage = settings.systemMessage
-                    self.documentView.updateInsets(geometry.size.width)
+//                    self.documentView.updateInsets(geometry.size.width)
                 }
-                .onChange(of: geometry.size, perform: { size in
-                    self.documentView.updateInsets(size.width)
-                })
-        }
+//                .onChange(of: geometry.size, perform: { size in
+//                    self.documentView.updateInsets(size.width)
+//                })
+//        }
             .onChange(of: settings.apiKey, perform: { newValue in
                 self.chatGPT.key = newValue
             })
@@ -43,7 +39,7 @@ struct ContentView: View {
             })
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
-                    .environmentObject(settings)
+//                    .environmentObject(settings)
                     .padding()
             }
             .toolbar {
@@ -57,22 +53,24 @@ struct ContentView: View {
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: {
-                        documentView.GPTify(chatGPT: self.chatGPT)
+                        if let gpt = self.gptifier {
+                            gpt.GPTify(chatGPT: self.chatGPT)                            
+                        }
                     }, label: {
                         Image(systemName: "bubble.left.fill")
                     })
                     .keyboardShortcut(.return, modifiers: [.command]) 
-                    .disabled(self.isGPTWriting)
+//                    .disabled(gptifier?.isWriting)
                 }
             }
     }
 }
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        let doc = TextDocument(text: "hello world")
-        NavigationStack {
-            ContentView(document: .constant(doc), isWriting: .constant(false))
-        }
-    }
-}
+//struct ContentView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        let doc = TextDocument(text: "hello world")
+//        NavigationStack {
+//            ContentView(document: .constant(doc), isWriting: .constant(false))
+//        }
+//    }
+//}
