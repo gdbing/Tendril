@@ -4,9 +4,12 @@ import SwiftChatGPT
 struct ContentView: View {
     private var documentView: DocumentView
     let chatGPT: ChatGPT
-    init(document: Binding<TextDocument>) {
-        self.documentView = DocumentView(text: document.text)
+    @Binding var isGPTWriting: Bool
+    
+    init(document: Binding<TextDocument>, isWriting: Binding<Bool>) {
+        self.documentView = DocumentView(text: document.text, isGPTWriting: isWriting)
         self.chatGPT = ChatGPT(key: "")
+        _isGPTWriting = isWriting
     }
     
     @StateObject private var settings: Settings = Settings()
@@ -56,9 +59,10 @@ struct ContentView: View {
                     Button(action: {
                         documentView.GPTify(chatGPT: self.chatGPT)
                     }, label: {
-                        Image(systemName: "bubble.left")
+                        Image(systemName: "bubble.left.fill")
                     })
                     .keyboardShortcut(.return, modifiers: [.command]) 
+                    .disabled(self.isGPTWriting)
                 }
             }
     }
@@ -68,7 +72,7 @@ struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         let doc = TextDocument(text: "hello world")
         NavigationStack {
-            ContentView(document: .constant(doc))
+            ContentView(document: .constant(doc), isWriting: .constant(false))
         }
     }
 }
