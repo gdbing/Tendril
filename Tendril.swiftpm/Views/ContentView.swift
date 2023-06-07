@@ -3,32 +3,13 @@ import SwiftChatGPT
 
 struct ContentView: View {
     @Binding var document: TextDocument
-    let chatGPT: ChatGPT = ChatGPT(key: "")
-    @State var gptifier: GPTifier?
+    @ObservedObject var gptifier: GPTifier
         
     @EnvironmentObject private var settings: Settings
     @State private var showingSettings: Bool = false
 
     var body: some View {
-        DocumentView(text: $document.text, gpt: $gptifier)
-                .onAppear {
-                    self.chatGPT.key = settings.apiKey
-                    self.chatGPT.model = settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo"
-                    self.chatGPT.temperature = Float(settings.temperature)
-                    self.chatGPT.systemMessage = settings.systemMessage
-                }
-            .onChange(of: settings.apiKey, perform: { newValue in
-                self.chatGPT.key = newValue
-            })
-            .onChange(of: settings.isGPT4, perform: { newValue in
-                self.chatGPT.model = newValue ? "gpt-4" : "gpt-3.5-turbo"
-            })
-            .onChange(of: settings.temperature, perform: { newValue in
-                self.chatGPT.temperature = Float(newValue)
-            })
-            .onChange(of: settings.systemMessage, perform: { newValue in
-                self.chatGPT.systemMessage = newValue
-            })
+        DocumentView(text: $document.text, gpt: gptifier)
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
             }
@@ -43,16 +24,40 @@ struct ContentView: View {
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: {
-                        if let gpt = self.gptifier {
-                            gpt.GPTify(chatGPT: self.chatGPT)                            
-                        }
+                        self.gptifier.GPTify()
                     }, label: {
                         Image(systemName: "bubble.left.fill")
                     })
-                    .keyboardShortcut(.return, modifiers: [.command]) 
-//                    .disabled(gptifier?.isWriting)
+                    .keyboardShortcut(.return, modifiers: [.command])
+                    .disabled(self.gptifier.isWriting)
+                }
+                ToolbarItem(placement: .automatic) {
+                    let words = document.text.components(separatedBy: .whitespacesAndNewlines)
+                    let filteredWords = words.filter { !$0.isEmpty }
+                    let wordCount = filteredWords.count
+                    Text("\(self.settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo") | \(String(format: "%.1f°", self.settings.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
+                        .monospacedDigit()
                 }
             }
+            .onAppear {
+                self.gptifier.chatGPT.key = settings.apiKey
+                self.gptifier.chatGPT.model = settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo"
+                self.gptifier.chatGPT.temperature = Float(settings.temperature)
+                self.gptifier.chatGPT.systemMessage = settings.systemMessage
+            }
+            .onChange(of: settings.apiKey, perform: { newValue in
+                self.gptifier.chatGPT.key = newValue
+            })
+            .onChange(of: settings.isGPT4, perform: { newValue in
+                self.gptifier.chatGPT.model = newValue ? "gpt-4" : "gpt-3.5-turbo"
+            })
+            .onChange(of: settings.temperature, perform: { newValue in
+                self.gptifier.chatGPT.temperature = Float(newValue)
+            })
+            .onChange(of: settings.systemMessage, perform: { newValue in
+                self.gptifier.chatGPT.systemMessage = newValue
+            })
+
     }
 }
 
@@ -73,7 +78,7 @@ Nearly all joined in singing this hymn, which swelled high above the howling of 
 """
         let doc = TextDocument(text: mobyDickChapter9)
         NavigationStack {
-            ContentView(document: .constant(doc))
+            ContentView(document: .constant(doc), gptifier: GPTifier())
                 .environmentObject(Settings())
         }
     }

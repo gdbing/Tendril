@@ -4,13 +4,18 @@ import SwiftChatGPT
 struct DocumentView: UIViewRepresentable {
     @State private var textView = UITextView()
     @Binding var text: String
-    @Binding var gpt: GPTifier?
+    private var gpt: GPTifier
+    
+    init(text: Binding<String>, gpt: GPTifier) {
+        _text = text
+        self.gpt = gpt
+    }
     
     @ScaledMetric(relativeTo: .body) var maxWidth = 680    
         
     func makeUIView(context: Context) -> UITextView {
-        self.gpt = GPTifier(textView)
-
+        self.gpt.textView = textView
+        
         textView.text = self.text
         textView.delegate = context.coordinator
         textView.isScrollEnabled = true
@@ -35,7 +40,7 @@ struct DocumentView: UIViewRepresentable {
                                                      bottom: 0.0,
                                                      right: insetSize)
         }
-        return nil
+        return nil // default behaviour, use proposed size
     }
     
     func makeCoordinator() -> Coordinator {
@@ -54,10 +59,7 @@ struct DocumentView: UIViewRepresentable {
         }
         
         func textViewDidChangeSelection(_ textView: UITextView) {
-            self.parent.gpt?.setTextColor(.label)
-//            self.parent.textView.frame.width
+            self.parent.gpt.setTextColor(.label)
         }
-        
-        
     }
 }

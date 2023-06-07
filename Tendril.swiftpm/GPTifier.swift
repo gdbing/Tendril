@@ -5,50 +5,67 @@ fileprivate let betweenVs = try! NSRegularExpression(pattern: "^vvv[\\s\\S]*?\\R
 fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^\\^\\^\\R?", options: [])
 
 class GPTifier: ObservableObject {
-    @Published var isWriting = false
-    private var textView: UITextView
+    var chatGPT: ChatGPT = ChatGPT(key: "")
+    var textView: UITextView?
     
-    init(_ textView: UITextView) {
-        self.textView = textView
+    @Published var isWriting = false
+    
+    func eat(textView: UITextView) -> String {
+        if let selection = textView.selectedTextRange {
+            if let selectedText = textView.text(in: selection), 
+                selectedText.count > 0 {
+                return selectedText
+            } else if let precedingRange = textView.textRange(from: textView.beginningOfDocument, to: selection.end),
+                      let precedingText = textView.text(in: precedingRange),
+                      precedingText.count > 0 {
+                return precedingText
+            } 
+        }
+        
+        return textView.text
     }
     
-    func GPTify(chatGPT: ChatGPT) {
-        guard !self.isWriting else {
+    func GPTify() {
+        guard !self.isWriting, let textView = self.textView else {
             return
         }
+        
+        let text = self.eat(textView: textView)
+        let uneaten = text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
+        
         self.isWriting = true
-        let uneaten = self.textView.text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
         DispatchQueue.main.async {
+            var selectionPoint = textView.selectedTextRange
             Task {
-                var selectionPoint = self.textView.selectedTextRange
-                switch await chatGPT.streamChatText(query: uneaten) {
+                defer { self.isWriting = false }
+                switch await self.chatGPT.streamChatText(query: uneaten) {
                 case .failure(let error):
-                    self.textView.insertText("\nCommunication Error:\n\(error.description)")
-                    self.isWriting = false
+                    textView.insertText("\nCommunication Error:\n\(error.description)")
                     return
                 case .success(let results):
                     for try await result in results {
                         if let result {
                             DispatchQueue.main.async {
-                                self.textView.selectedTextRange = selectionPoint
+                                textView.selectedTextRange = selectionPoint
                                 self.setTextColor(.secondaryLabel)
                                 
-                                self.textView.insertText(result)
+                                textView.insertText(result)
                                 
-                                selectionPoint = self.textView.selectedTextRange
+                                selectionPoint = textView.selectedTextRange
                                 self.setTextColor(.label)
                             }
                         }
                     }
-                    self.isWriting = false
                 }
             }
         }
     }
     
     func setTextColor(_ color: UIColor) {
-        var attributes = self.textView.typingAttributes
-        attributes.updateValue(color, forKey: NSAttributedString.Key.foregroundColor)
-        self.textView.typingAttributes = attributes
+        if let textView {
+            var attributes = textView.typingAttributes
+            attributes.updateValue(color, forKey: NSAttributedString.Key.foregroundColor)
+            textView.typingAttributes = attributes
+        }
     }
 }
