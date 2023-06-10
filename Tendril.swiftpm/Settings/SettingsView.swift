@@ -114,6 +114,7 @@ struct SettingsView: View {
                         var dup = persona
                         dup.id = UUID()
                         if let index = settings.personae.firstIndex(of: persona) {
+                            dup.isSelected = false
                             settings.personae.insert(dup, at: index.advanced(by: 1))
                         }
                     } label: {
