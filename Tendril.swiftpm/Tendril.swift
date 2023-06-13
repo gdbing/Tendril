@@ -18,11 +18,9 @@ struct Tendril: App {
             ContentView(project: $projectURL, gpt: gptifier)
                 .environmentObject(settings)
                 .onChange(of: self.projectURL) { [oldURL = projectURL] newURL in
-                    print("stopAccessingSecurityScopedResource \(oldURL)")
                     oldURL?.stopAccessingSecurityScopedResource()
                     if let newURL, 
                         newURL.startAccessingSecurityScopedResource() {
-                        print("startAccessingSecurityScopedResource \(newURL)")
                         if let bookmark = try? newURL.bookmarkData(options: [], includingResourceValuesForKeys: [], relativeTo: nil) {
                             self.projectBookmark = bookmark
                         } else {

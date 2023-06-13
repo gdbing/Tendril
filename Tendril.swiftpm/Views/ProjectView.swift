@@ -4,7 +4,7 @@ struct ProjectView: View {
     @Binding var projectURL: URL?
     @Binding var documentURLs: [URL]
     @Binding var selectedDocumentURL: URL?
-    
+        
     var body: some View {
         VStack {
             List(documentURLs, id: \.self, selection: $selectedDocumentURL) { documentURL in
@@ -12,6 +12,7 @@ struct ProjectView: View {
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button("Delete", role: .destructive) {
                             if documentURL.deleteFile() {
+                                selectedDocumentURL = nil
                                 documentURLs.removeAll(where: { $0 == documentURL })
                             }
                         }
@@ -19,15 +20,15 @@ struct ProjectView: View {
                     .contextMenu {
                         Button("Delete", role: .destructive) {
                             if documentURL.deleteFile() {
+                                selectedDocumentURL = nil
                                 documentURLs.removeAll(where: { $0 == documentURL })
                             }
                         }
                     }
             }
-            Text(selectedDocumentURL?.lastPathComponent ?? "")
+            .navigationBarTitle(projectURL?.lastPathComponent ?? "", displayMode: .inline)
         }
-        .navigationTitle(projectURL?.lastPathComponent ?? "")
-//        .navigationDocument(projectURL)
+
     }
 }
 

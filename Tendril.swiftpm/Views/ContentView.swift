@@ -10,11 +10,11 @@ struct ContentView: View {
     @Binding var projectURL: URL?
     @State var documentURLs: [URL] = []
     @State var selectedDocumentURL: URL? = nil
+    @State var selectedName: String = ""
     
     @State var showImporter = false
 
     init(project: Binding<URL?>, gpt: GPTifier) {
-        print("ContentView init")
         self.gpt = gpt
         _projectURL = project
         if let projectURL {
@@ -35,6 +35,7 @@ struct ContentView: View {
             return 
         }
         self.documentURLs = files
+        self.selectedDocumentURL = nil
     }
         
     var body: some View {
@@ -48,10 +49,23 @@ struct ContentView: View {
                     }
                 }
         }, detail: {
-            DocumentView(documentURL: $selectedDocumentURL, gpt: gpt)
-                .onChange(of: self.selectedDocumentURL) { newValue in
-                    print(newValue)
+            ZStack {
+                DocumentView(documentURL: $selectedDocumentURL, gpt: gpt)
+                if let selectedDocumentURL {
+                    Color.clear
+                        .navigationTitle($selectedName)
+                        .navigationBarTitle(selectedDocumentURL.lastPathComponent, displayMode: .inline)
+                        .navigationDocument(selectedDocumentURL)
                 }
+            }
+            .onChange(of: selectedName) { newName in
+                if let selectedDocumentURL,
+                   let newURL = selectedDocumentURL.renameFile(name: newName),
+                   let ix = self.documentURLs.firstIndex(of: selectedDocumentURL) {
+                    self.documentURLs.replaceSubrange(ix...ix, with: [newURL])
+                    self.selectedDocumentURL = newURL
+                }
+            }     
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
             }
@@ -108,7 +122,6 @@ struct ContentView: View {
                 do {
                     let selectedFolder: URL = try result.get()
                     if selectedFolder.startAccessingSecurityScopedResource() {
-                        print("startAccessingSecurityScopedResource \(selectedFolder)")
                         self.projectURL = selectedFolder
                         self.loadProject(url: selectedFolder)                        
                     } 

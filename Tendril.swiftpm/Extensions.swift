@@ -31,12 +31,14 @@ extension URL {
     }
     
     func renameFile(name: String) -> URL? {
-        let newURL = self.deletingLastPathComponent().appendingPathComponent(name)
+        let newURL = self
+            .deletingLastPathComponent()
+            .appendingPathComponent(name, isDirectory: self.hasDirectoryPath)
         do {
             try FileManager.default.moveItem(at: self, to: newURL)
             return newURL
         } catch {
-            print("Error renaming the file: \(self.absoluteString) to: \(newURL) \(error)")
+            print("ERROR: failed to rename: \(self.absoluteString) to: \(newURL) \(error)")
         }
         return nil
     }
