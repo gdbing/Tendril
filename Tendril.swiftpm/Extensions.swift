@@ -40,4 +40,28 @@ extension URL {
         }
         return nil
     }
+    
+    /// Requirements:
+    ///    - URL is a file URL
+    ///    - file contents are plaintext UTF8
+    ///    - startAccessingSecurityScopedResource() 
+    func readFile() -> String? {
+        if let data = try? Data(contentsOf: self, options: []),
+           let text = String(data: data, encoding: .utf8) {
+            return text
+        }
+        return nil
+    }
+    
+    /// Requirements:
+    ///    - URL is a file URL
+    ///    - startAccessingSecurityScopedResource() 
+    func writeFile(text: String) {
+        do {
+            try text.write(to: self, atomically: false, encoding: .utf8)
+        } catch {
+            print("Error writing to file: \(error)")
+        }
+    }
+    
 }

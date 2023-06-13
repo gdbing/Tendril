@@ -3,11 +3,11 @@ import SwiftChatGPT
 
 struct DocumentView: UIViewRepresentable {
     @State private var textView = UITextView()
-    @Binding var text: String
+    @Binding var documentURL: URL?
     private var gpt: GPTifier
     
-    init(text: Binding<String>, gpt: GPTifier) {
-        _text = text
+    init(documentURL: Binding<URL?>, gpt: GPTifier) {
+        _documentURL = documentURL
         self.gpt = gpt
     }
     
@@ -15,8 +15,8 @@ struct DocumentView: UIViewRepresentable {
         
     func makeUIView(context: Context) -> UITextView {
         self.gpt.textView = textView
-        
-        textView.text = self.text
+        print("makeUITextView")
+        textView.text = documentURL?.readFile() ?? ""
         textView.delegate = context.coordinator
         textView.isScrollEnabled = true
         textView.isEditable = true
@@ -55,7 +55,10 @@ struct DocumentView: UIViewRepresentable {
         }
         
         func textViewDidChange(_ textView: UITextView) {
-            self.parent.text = textView.text
+            if let documentURL = self.parent.documentURL {
+                documentURL.writeFile(text: textView.text)
+            }
+                
         }
         
         func textViewDidChangeSelection(_ textView: UITextView) {
