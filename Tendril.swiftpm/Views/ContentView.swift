@@ -8,56 +8,66 @@ struct ContentView: View {
     @EnvironmentObject private var settings: Settings
     @State private var showingSettings: Bool = false
 
+    @State var projectURL: URL? = nil
+    @State var documentURLs: [URL] = []
+    @State var selectedDocumentURL: URL? = nil
+    
     var body: some View {
-        DocumentView(text: $document.text, gpt: gptifier)
+        NavigationSplitView(sidebar: {
+            ProjectView(projectURL: $projectURL, documentURLs: $documentURLs, selectedDocumentURL: $selectedDocumentURL)
+            
+        }, detail: {
+            DocumentView(text: $document.text, gpt: gptifier)
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        self.showingSettings = true
-                    }, label: {
-                        Image(systemName: "gear")
-                    })
-                    .keyboardShortcut(",", modifiers: [.command]) 
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button(action: {
-                        self.gptifier.GPTify()
-                    }, label: {
-                        Image(systemName: "bubble.left.fill")
-                    })
-                    .keyboardShortcut(.return, modifiers: [.command])
-                    .disabled(self.gptifier.isWriting)
-                }
-                ToolbarItem(placement: .automatic) {
-                    let words = document.text.components(separatedBy: .whitespacesAndNewlines)
-                    let filteredWords = words.filter { !$0.isEmpty }
-                    let wordCount = filteredWords.count
-                    Text("\(self.settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo") | \(String(format: "%.1f°", self.settings.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
-                        .monospacedDigit()
-                }
-            }
-            .onAppear {
-                self.gptifier.chatGPT.key = settings.apiKey
-                self.gptifier.chatGPT.model = settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo"
-                self.gptifier.chatGPT.temperature = Float(settings.temperature)
-                self.gptifier.chatGPT.systemMessage = settings.systemMessage
-            }
-            .onChange(of: settings.apiKey, perform: { newValue in
-                self.gptifier.chatGPT.key = newValue
-            })
-            .onChange(of: settings.isGPT4, perform: { newValue in
-                self.gptifier.chatGPT.model = newValue ? "gpt-4" : "gpt-3.5-turbo"
-            })
-            .onChange(of: settings.temperature, perform: { newValue in
-                self.gptifier.chatGPT.temperature = Float(newValue)
-            })
-            .onChange(of: settings.systemMessage, perform: { newValue in
-                self.gptifier.chatGPT.systemMessage = newValue
-            })
 
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    self.showingSettings = true
+                }, label: {
+                    Image(systemName: "gear")
+                })
+                .keyboardShortcut(",", modifiers: [.command]) 
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: {
+                    self.gptifier.GPTify()
+                }, label: {
+                    Image(systemName: "bubble.left.fill")
+                })
+                .keyboardShortcut(.return, modifiers: [.command])
+                .disabled(self.gptifier.isWriting)
+            }
+            ToolbarItem(placement: .automatic) {
+                let words = document.text.components(separatedBy: .whitespacesAndNewlines)
+                let filteredWords = words.filter { !$0.isEmpty }
+                let wordCount = filteredWords.count
+                Text("\(self.settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo") | \(String(format: "%.1f°", self.settings.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
+                    .monospacedDigit()
+            }
+        }
+        })
+
+        .onAppear {
+            self.gptifier.chatGPT.key = settings.apiKey
+            self.gptifier.chatGPT.model = settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo"
+            self.gptifier.chatGPT.temperature = Float(settings.temperature)
+            self.gptifier.chatGPT.systemMessage = settings.systemMessage
+        }
+        .onChange(of: settings.apiKey, perform: { newValue in
+            self.gptifier.chatGPT.key = newValue
+        })
+        .onChange(of: settings.isGPT4, perform: { newValue in
+            self.gptifier.chatGPT.model = newValue ? "gpt-4" : "gpt-3.5-turbo"
+        })
+        .onChange(of: settings.temperature, perform: { newValue in
+            self.gptifier.chatGPT.temperature = Float(newValue)
+        })
+        .onChange(of: settings.systemMessage, perform: { newValue in
+            self.gptifier.chatGPT.systemMessage = newValue
+        })
     }
 }
 

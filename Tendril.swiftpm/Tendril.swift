@@ -8,12 +8,12 @@ struct Tendril: App {
     var gptifier = GPTifier()
     
     var body: some Scene {
-//        WindowGroup {
+        WindowGroup {
 //            NavigationStack {
-//                ContentView(document: $document, gptifier: gptifier)
-//                    .environmentObject(settings)
+                ContentView(document: $document, gptifier: gptifier)
+                    .environmentObject(settings)
 //            }
-//        }
+        }
                     DocumentGroup(newDocument: TextDocument()) { file in
                         ContentView(document: file.$document, gptifier: gptifier)
                             .environmentObject(settings)
