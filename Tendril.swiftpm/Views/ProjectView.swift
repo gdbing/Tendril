@@ -26,7 +26,8 @@ struct ProjectView: View {
                         }
                     }
             }
-            .navigationBarTitle(projectURL?.lastPathComponent ?? "", displayMode: .inline)
+            .navigationTitle(projectURL?.lastPathComponent ?? "")
+            .navigationBarTitleDisplayMode(.inline)
         }
 
     }

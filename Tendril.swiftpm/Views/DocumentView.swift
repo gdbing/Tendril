@@ -15,22 +15,22 @@ struct DocumentView: UIViewRepresentable {
         
     func makeUIView(context: Context) -> UITextView {
         self.gpt.textView = textView
-        
-        textView.text = documentURL?.readFile() ?? ""
+        if let documentURL {
+            textView.text = documentURL.readFile()
+        }
         textView.delegate = context.coordinator
         textView.isScrollEnabled = true
         textView.isEditable = true
         textView.isUserInteractionEnabled = true
         textView.backgroundColor = UIColor.systemBackground
-        textView.font = UIFont.systemFont(ofSize: 16)
+        textView.font = UIFont.systemFont(ofSize: 18)
         return textView
     }
     
     func updateUIView(_ uiView: UITextView, context: Context) {
-        // This is not needed if `textView` is the primary source of truth, and, in fact, was the source of a ton of annoying glitches and issues when there are >500 words in the view
-
-        uiView.text = documentURL?.readFile()
-        print("Update view")
+        if let documentURL {
+            uiView.text = documentURL.readFile()
+        }
     }
     
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {

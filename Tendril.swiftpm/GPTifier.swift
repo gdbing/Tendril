@@ -36,6 +36,12 @@ class GPTifier: ObservableObject {
         self.isWriting = true
         DispatchQueue.main.async {
             var selectionPoint = textView.selectedTextRange
+            
+            let words = uneaten.components(separatedBy: .whitespacesAndNewlines)
+            let filteredWords = words.filter { !$0.isEmpty }
+            let wordCount = filteredWords.count
+            print("gptify \(self.chatGPT.model) | \(String(format: "%.1f°", self.chatGPT.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
+
             Task {
                 defer { self.isWriting = false }
                 switch await self.chatGPT.streamChatText(query: uneaten) {

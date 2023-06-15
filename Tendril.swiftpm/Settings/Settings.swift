@@ -46,20 +46,46 @@ class Settings: ObservableObject {
             }
         }
     }
-
+    
     var systemMessage: String {
         get {
-         personae.first(where: { $0.isSelected })?.message ?? "You are a helpful assistant"
+            personae.first(where: { $0.isSelected })?.message ?? "You are a helpful assistant"
         }
     }
     
+    private let urlKey = "projectBookmark"
+    @Published var projectURL: URL? {
+        didSet {
+            if let bookmark = try? projectURL?.bookmarkData(options: [], includingResourceValuesForKeys: [], relativeTo: nil) {
+                UserDefaults().set(bookmark, forKey: urlKey)
+            } else {
+                print("ERROR: failed to produce bookmark for \(String(describing: projectURL))")
+            }
+        }
+    }
 
     init() {
-        if let data = UserDefaults.standard.data(forKey: "personae"), 
+        if let data = UserDefaults().data(forKey: "personae"), 
             let decodedItems = try? JSONDecoder().decode([Persona].self, from: data) {
                 self.personae = decodedItems
         } else {
             self.personae = [Persona.defaultPersona]
-        }        
+        }
+
+        var isStale = false
+        if let data = UserDefaults().data(forKey: urlKey) {
+            if let url = try? URL(resolvingBookmarkData: data, 
+                                  options: [], 
+                                  relativeTo: nil, 
+                                  bookmarkDataIsStale: &isStale) {
+                self.projectURL = url
+                
+                
+                if isStale {
+                    let newBookmark = try? url.bookmarkData(options: [], includingResourceValuesForKeys: [], relativeTo: nil)
+                    UserDefaults().set(newBookmark, forKey: urlKey)
+                }
+            }
+        }
     }
 }
