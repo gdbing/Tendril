@@ -108,7 +108,6 @@ struct ContentView: View {
                    let ix = self.documentURLs.firstIndex(of: selectedDocumentURL) {
                     self.documentURLs.replaceSubrange(ix...ix, with: [newURL])
                     self.selectedDocumentURL = newURL
-                    print("rename")
                 }
             }     
             .sheet(isPresented: $showingSettings) {
@@ -132,27 +131,26 @@ struct ContentView: View {
                     .keyboardShortcut(.return, modifiers: [.command])
                     .disabled(self.gpt.isWriting)
                 }
-//                ToolbarItem(placement: .automatic) {
-//                    let words = text.components(separatedBy: .whitespacesAndNewlines)
-//                    let filteredWords = words.filter { !$0.isEmpty }
-//                    let wordCount = filteredWords.count
-//                    Text("\(self.settings.isGPT4 ? "gpt-4" : "gpt-3.5") | \(String(format: "%.1f°", self.settings.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
-//                        .monospacedDigit()
-//                }
+                ToolbarItem(placement: .automatic) {
+                    if let wordCount = gpt.wordCount {
+                        Text("\(self.settings.model) | \(String(format: "%.1f°", self.settings.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
+                            .monospacedDigit()
+                    }
+                }
             }
         })
 
         .onAppear {
             self.gpt.chatGPT.key = settings.apiKey
-            self.gpt.chatGPT.model = settings.isGPT4 ? "gpt-4" : "gpt-3.5-turbo-0613"
+            self.gpt.chatGPT.model = settings.model
             self.gpt.chatGPT.temperature = Float(settings.temperature)
             self.gpt.chatGPT.systemMessage = settings.systemMessage
         }
         .onChange(of: settings.apiKey, perform: { newValue in
             self.gpt.chatGPT.key = newValue
         })
-        .onChange(of: settings.isGPT4, perform: { newValue in
-            self.gpt.chatGPT.model = newValue ? "gpt-4" : "gpt-3.5-turbo-0613"
+        .onChange(of: settings.model, perform: { newValue in
+            self.gpt.chatGPT.model = newValue
         })
         .onChange(of: settings.temperature, perform: { newValue in
             self.gpt.chatGPT.temperature = Float(newValue)

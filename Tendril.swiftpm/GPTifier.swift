@@ -10,6 +10,15 @@ class GPTifier: ObservableObject {
     
     @Published var isWriting = false
     
+    var wordCount: Int? {
+        get {
+            guard let textView else { return nil } 
+            let words = textView.text.components(separatedBy: .whitespacesAndNewlines)
+            let filteredWords = words.filter { !$0.isEmpty }
+            return filteredWords.count
+        }
+    }
+    
     func eat(textView: UITextView) -> String {
         if let selection = textView.selectedTextRange {
             if let selectedText = textView.text(in: selection), 

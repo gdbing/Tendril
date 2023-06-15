@@ -17,8 +17,16 @@ struct SettingsView: View {
                             .monospacedDigit()
                     }
                 }
-                Section(header: Text("Model")) {
-                    Toggle("GPT4", isOn: $settings.isGPT4)
+                Picker(selection: $settings.model, label: Text("Model")) {
+                    // gpt-3.5-turbo-0301 and gpt-4-0314 will be deprecated and discontinued on Sept13,2023 
+                    Text("gpt-3.5-turbo").tag("gpt-3.5-turbo")
+                    Text("gpt-3.5-turbo-16k").tag("gpt-3.5-turbo-16k")
+                    Text("gpt-3.5-turbo-0301").tag("gpt-3.5-turbo-0301")
+                    Text("gpt-3.5-turbo-0613").tag("gpt-3.5-turbo-0613")
+                    Text("gpt-4").tag("gpt-4")
+                    Text("gpt-4-32k").tag("gpt-4-32k")
+                    Text("gpt-4-0314").tag("gpt-4-0314")
+                    Text("gpt-4-0613").tag("gpt-4-0613")
                 }
                 Section(header: Text("Persona")) {
                     ForEach($settings.personae) { $persona in

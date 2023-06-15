@@ -30,15 +30,15 @@ class Settings: ObservableObject {
         }
     }
     
-    @AppStorage("isGPT4") 
-    var isGPT4: Bool = false {
+    @AppStorage("model")
+    var model: String = "gpt-3.5-turbo" {
         willSet {
             DispatchQueue.main.async {
                 self.objectWillChange.send()
             }
         }
     }
-        
+            
     @Published var personae: [Persona] {
         didSet {
             if let data = try? JSONEncoder().encode(personae) {

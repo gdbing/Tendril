@@ -4,6 +4,7 @@ import SwiftChatGPT
 struct DocumentView: UIViewRepresentable {
     @State private var textView = UITextView()
     @Binding var documentURL: URL?
+    
     private var gpt: GPTifier
     
     init(documentURL: Binding<URL?>, gpt: GPTifier) {
@@ -22,6 +23,7 @@ struct DocumentView: UIViewRepresentable {
         textView.isScrollEnabled = true
         textView.isEditable = true
         textView.isUserInteractionEnabled = true
+        textView.scrollsToTop = true
         textView.backgroundColor = UIColor.systemBackground
         textView.font = UIFont.systemFont(ofSize: 18)
         return textView
@@ -29,7 +31,17 @@ struct DocumentView: UIViewRepresentable {
     
     func updateUIView(_ uiView: UITextView, context: Context) {
         if let documentURL {
-            uiView.text = documentURL.readFile()
+            let documentText = documentURL.readFile()
+            if documentText != uiView.text {
+                print("updating UIView with \(documentURL.absoluteString)")
+                uiView.text = documentText
+                uiView.isEditable = true
+                let topOffset = CGPoint(x: 0, y: 0)
+                uiView.setContentOffset(topOffset, animated: false)
+            }
+        } else {
+            uiView.text = ""
+            uiView.isEditable = false
         }
     }
     
