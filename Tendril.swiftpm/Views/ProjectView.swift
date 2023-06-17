@@ -1,49 +1,27 @@
 import SwiftUI
 
-struct ProjectView: View {
-    @Binding var projectURL: URL?
-    @Binding var documentURLs: [URL]
-    @Binding var selectedDocumentURL: URL?
+extension ContentView { 
+    struct ProjectView: View {
+        @StateObject var viewModel: ViewModel
         
-    var body: some View {
-        VStack {
-            List(documentURLs, id: \.self, selection: $selectedDocumentURL) { documentURL in
-                Text(documentURL.lastPathComponent)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button("Delete", role: .destructive) {
-                            if documentURL.deleteFile() {
-                                selectedDocumentURL = nil
-                                documentURLs.removeAll(where: { $0 == documentURL })
+        var body: some View {
+            VStack {
+                List(viewModel.documentURLs, id: \.self, selection: $viewModel.selectedDocumentURL) { documentURL in
+                    Text(documentURL.lastPathComponent)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button("Delete", role: .destructive) {
+                                viewModel.delete(document: documentURL)
                             }
                         }
-                    }
-                    .contextMenu {
-                        Button("Delete", role: .destructive) {
-                            if documentURL.deleteFile() {
-                                selectedDocumentURL = nil
-                                documentURLs.removeAll(where: { $0 == documentURL })
+                        .contextMenu {
+                            Button("Delete", role: .destructive) {
+                                viewModel.delete(document:documentURL)
                             }
                         }
-                    }
+                }
+                .navigationTitle(viewModel.projectURL?.lastPathComponent ?? "")
+                .navigationBarTitleDisplayMode(.inline)
             }
-            .navigationTitle(projectURL?.lastPathComponent ?? "")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-
-    }
-}
-
-struct ProjectView_Previews: PreviewProvider {
-    static var previews: some View {
-        let folderPath = "file://folder/project"
-        @State var selectedURL = URL(string: folderPath + "/special-file.txt")
-        NavigationStack {
-            ProjectView(projectURL: .constant(URL(string: folderPath)!), 
-                        documentURLs: .constant([URL(string: folderPath + "/patrick.txt")!,
-                                                 selectedURL!,
-                                                 URL(string: folderPath + "/roberto.txt")!,
-                                                 URL(string: folderPath + "/renata.txt")!]), 
-                        selectedDocumentURL: $selectedURL)
         }
     }
 }

@@ -7,7 +7,8 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
 class GPTifier: ObservableObject {
     var chatGPT: ChatGPT = ChatGPT(key: "")
     var textView: UITextView?
-    
+    private var settings: Settings = Settings()
+
     @Published var isWriting = false
     
     var wordCount: Int? {
@@ -39,6 +40,11 @@ class GPTifier: ObservableObject {
             return
         }
         
+        self.chatGPT.key = settings.apiKey
+        self.chatGPT.model = settings.model
+        self.chatGPT.temperature = Float(settings.temperature)
+        self.chatGPT.systemMessage = settings.systemMessage
+
         let text = self.eat(textView: textView)
         let uneaten = text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
         

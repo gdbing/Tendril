@@ -3,20 +3,12 @@ import SwiftChatGPT
 
 @main
 struct Tendril: App {
-    var gptifier = GPTifier()
-    var settings = Settings()
-        
-    @State var projectURL: URL?
+    var settings = Settings()        
     
     var body: some Scene {
         WindowGroup {
-            ContentView(project: $projectURL, gpt: gptifier)
+            ContentView()
                 .environmentObject(settings)
-                .onChange(of: self.projectURL) { [oldURL = projectURL] newURL in
-                    oldURL?.stopAccessingSecurityScopedResource()
-                    let _ = newURL?.startAccessingSecurityScopedResource()
-                    settings.projectURL = newURL
-                }
         }
     }
 }
