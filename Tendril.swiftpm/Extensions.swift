@@ -64,5 +64,35 @@ extension URL {
             print("Error writing to file: \(error)")
         }
     }
+}
+
+extension NSAttributedString {
+    struct RangedAttribute {
+        let range: NSRange
+        let attribute: Any
+    }
     
+    convenience init(_ string: String, attrs: [RangedAttribute]) {
+        let mutableString = NSMutableAttributedString(string: string)
+        mutableString.addAttribute(.font, value: UIFont.systemFont(ofSize: 18), range: NSRange(location: 0, length: string.count))
+        for attr in attrs {
+            mutableString.addAttribute(.foregroundColor, value: attr.attribute, range: attr.range)
+        } 
+        self.init(attributedString: mutableString)
+    }
+    
+    var rangedAttributes: [RangedAttribute] {
+        get {
+            var ars = [RangedAttribute]()
+            self.enumerateAttribute(.foregroundColor, 
+                                    in: NSRange(location: 0, length: self.length), 
+                                    options: [], 
+                                    using: { value,range,_ in
+                if let value {
+                    ars.append(RangedAttribute(range: range, attribute: value))
+                }
+            })
+            return ars
+        }
+    }
 }
