@@ -82,6 +82,5 @@ extension UITextView {
         var attributes = self.typingAttributes
         attributes.updateValue(color, forKey: NSAttributedString.Key.foregroundColor)
         self.typingAttributes = attributes
-        }
     }
 }
