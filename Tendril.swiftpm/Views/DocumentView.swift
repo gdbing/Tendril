@@ -72,7 +72,16 @@ struct DocumentView: UIViewRepresentable {
         }
         
         func textViewDidChangeSelection(_ textView: UITextView) {
-            self.parent.gpt.setTextColor(.label)
+            textView.setTextColor(.label)
+        }
+    }
+}
+
+extension UITextView {
+    func setTextColor(_ color: UIColor) {
+        var attributes = self.typingAttributes
+        attributes.updateValue(color, forKey: NSAttributedString.Key.foregroundColor)
+        self.typingAttributes = attributes
         }
     }
 }

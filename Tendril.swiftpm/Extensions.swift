@@ -14,7 +14,6 @@ extension String {
                 offset += matchRange.length
             }
         }
-        
         return modifiedString as String
     }
 }

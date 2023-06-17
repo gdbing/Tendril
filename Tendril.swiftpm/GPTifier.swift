@@ -42,17 +42,22 @@ class GPTifier: ObservableObject {
         let text = self.eat(textView: textView)
         let uneaten = text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
         
-        self.isWriting = true
-        DispatchQueue.main.async {
+        DispatchQueue.main.async {            
+            self.isWriting = true
             var selectionPoint = textView.selectedTextRange
+            textView.setTextColor(.secondaryLabel)
             
+            defer { 
+                self.isWriting = false 
+                textView.setTextColor(.label)
+            }
+
             let words = uneaten.components(separatedBy: .whitespacesAndNewlines)
             let filteredWords = words.filter { !$0.isEmpty }
             let wordCount = filteredWords.count
             print("gptify \(self.chatGPT.model) | \(String(format: "%.1f°", self.chatGPT.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
 
             Task {
-                defer { self.isWriting = false }
                 switch await self.chatGPT.streamChatText(query: uneaten) {
                 case .failure(let error):
                     textView.insertText("\nCommunication Error:\n\(error.description)")
@@ -62,25 +67,13 @@ class GPTifier: ObservableObject {
                         if let result {
                             DispatchQueue.main.async {
                                 textView.selectedTextRange = selectionPoint
-                                self.setTextColor(.secondaryLabel)
-                                
                                 textView.insertText(result)
-                                
                                 selectionPoint = textView.selectedTextRange
-                                self.setTextColor(.label)
                             }
                         }
                     }
                 }
             }
-        }
-    }
-    
-    func setTextColor(_ color: UIColor) {
-        if let textView {
-            var attributes = textView.typingAttributes
-            attributes.updateValue(color, forKey: NSAttributedString.Key.foregroundColor)
-            textView.typingAttributes = attributes
         }
     }
 }
