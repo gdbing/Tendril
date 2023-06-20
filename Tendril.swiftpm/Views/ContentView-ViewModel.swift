@@ -2,39 +2,30 @@ import SwiftUI
 
 extension ContentView {
     class ViewModel: ObservableObject {
-//        @EnvironmentObject private var settings: Settings
-
-        @Published var project: Project?
+        //        @EnvironmentObject private var settings: Settings
+        
+        @Published var project: Project? {
+            willSet { project?.stopAccessingFolder() }
+        }
         @Published var documents: [Document]
         @Published var selectedDocument: Document?
         
-//        @Published var projectURL: URL? {
-//            willSet {
-//                projectURL?.stopAccessingSecurityScopedResource()
-//            }
-//            didSet {
-//                if let projectURL {
-//                    loadProject(url: projectURL)
-//                }
-//            }
-//        }
-//        @Published var documentURLs: [URL] = []
-//        @Published var selectedDocumentURL: URL? = nil
-//        @Published var selectedName: String = "" 
-        
         var gpt: GPTifier = GPTifier()
-
+        
         init() {
             self.documents = [Document]()
         }
-
+        
         func loadProject(url: URL) {
-            guard url.startAccessingSecurityScopedResource() else {
+            let project = Project(url: url)
+            
+            guard project.startAccessingFolder() else {
                 print("ERROR failed to access security scoped resource \(url)")
                 return
             }
-            self.project = Project(url: url)
-            self.documents = self.project?.documents ?? [Document]()
+            
+            self.project = project
+            self.documents = self.project!.readDocuments()
             self.selectedDocument = nil
         }
         
@@ -53,13 +44,16 @@ extension ContentView {
             self.documents.removeAll(where: { $0 == document })
         }
         
-//        func rename(document: Document, newName: String) {
-//            if newName != document.lastPathComponent,
-//               let newURL = document.renameFile(name: newName),
-//               let ix = self.documentURLs.firstIndex(of: document) {
-//                self.documentURLs.replaceSubrange(ix...ix, with: [newURL])
-//                self.selectedDocumentURL = newURL
-//            }
-//        }
+        func rename(document: Document, newName: String) {
+            if newName != document.name {
+                let newDocument = document.renamed(name: newName)
+                if let ix = self.documents.firstIndex(of: document) {
+                    self.documents.replaceSubrange(ix...ix, with: [newDocument])
+                }
+                if selectedDocument == document {
+                    selectedDocument = newDocument
+                }
+            }
+        }
     }
 }

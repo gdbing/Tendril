@@ -31,12 +31,12 @@ struct ContentView: View {
         }, detail: {
             ZStack {
                 DocumentView(document: $viewModel.selectedDocument, gpt: viewModel.gpt)
-//                if let selectedDocument = viewModel.selectedDocument {
-//                    Color.clear
-//                        .navigationTitle($viewModel.selectedName)
-//                        .navigationBarTitleDisplayMode(.inline)
-//                        .navigationDocument(selectedDocument)
-//                }
+                if let selectedDocument = viewModel.selectedDocument {
+                    Color.clear
+                        .navigationTitle(Binding(get: { selectedDocument.name }, 
+                                                 set: { viewModel.rename(document: selectedDocument, newName: $0) } ))
+                        .navigationBarTitleDisplayMode(.inline)
+                }
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()

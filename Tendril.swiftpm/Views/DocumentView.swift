@@ -14,10 +14,10 @@ struct DocumentView: UIViewRepresentable {
     
     @ScaledMetric(relativeTo: .body) var maxWidth = 680    
         
-    func makeUIView(context: Context) -> UITextView {
+    func makeUIView(context: Context) -> UITextView {       
         self.gpt.textView = textView
         if let document {
-            textView.text = document.read()
+            textView.text = document.readText()
         }
         textView.delegate = context.coordinator
         textView.isScrollEnabled = true
@@ -26,14 +26,18 @@ struct DocumentView: UIViewRepresentable {
         textView.scrollsToTop = true
         textView.backgroundColor = UIColor.systemBackground
         textView.font = UIFont.systemFont(ofSize: 18)
+        
+        textView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 150, right: 0)
+        
         return textView
     }
     
     func updateUIView(_ uiView: UITextView, context: Context) {
         if let document {
-            let documentText = document.read()
+            let documentText = document.readText()
             if documentText != uiView.text {
                 uiView.text = documentText
+               // TODO document.readGrey()
                 uiView.isEditable = true
                 let topOffset = CGPoint(x: 0, y: 0)
                 uiView.setContentOffset(topOffset, animated: false)
@@ -68,7 +72,7 @@ struct DocumentView: UIViewRepresentable {
         
         func textViewDidChange(_ textView: UITextView) {
             self.parent.document?.write(text: textView.text)
-            // TODO write gray
+            // TODO document.write(grey: )
         }
         
         func textViewDidChangeSelection(_ textView: UITextView) {
