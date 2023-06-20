@@ -11,14 +11,10 @@ struct ContentView: View {
         NavigationSplitView(sidebar: {
             ProjectView(viewModel: viewModel)
                 .toolbar {
-                    if viewModel.projectURL != nil {
+                    if viewModel.project != nil {
                         ToolbarItem(placement: .primaryAction) {
                             Button(action: {
-                                let newDoc = viewModel.newDocument()
-                                viewModel.selectedDocumentURL = newDoc
-                                if let newDoc {
-                                    viewModel.documentURLs.append(newDoc)
-                                }
+                                viewModel.newDocument()
                             }, label: {
                                 Image(systemName: "square.and.pencil")
                             }).keyboardShortcut("n", modifiers: [.command])
@@ -34,13 +30,13 @@ struct ContentView: View {
                 }
         }, detail: {
             ZStack {
-                DocumentView(documentURL: $viewModel.selectedDocumentURL, gpt: viewModel.gpt)
-                if let selectedDocumentURL = viewModel.selectedDocumentURL {
-                    Color.clear
-                        .navigationTitle($viewModel.selectedName)
-                        .navigationBarTitleDisplayMode(.inline)
-                        .navigationDocument(selectedDocumentURL)
-                }
+                DocumentView(document: $viewModel.selectedDocument, gpt: viewModel.gpt)
+//                if let selectedDocument = viewModel.selectedDocument {
+//                    Color.clear
+//                        .navigationTitle($viewModel.selectedName)
+//                        .navigationBarTitleDisplayMode(.inline)
+//                        .navigationDocument(selectedDocument)
+//                }
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
@@ -76,7 +72,7 @@ struct ContentView: View {
             allowedContentTypes: [.folder]) { result in
                 do {
                     let selectedFolder: URL = try result.get()
-                    viewModel.projectURL = selectedFolder
+                    viewModel.loadProject(url: selectedFolder)
                 } catch {
                     print(error.localizedDescription)
                 }

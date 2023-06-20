@@ -4,24 +4,28 @@ extension ContentView {
     class ViewModel: ObservableObject {
 //        @EnvironmentObject private var settings: Settings
 
-        @Published var projectURL: URL? {
-            willSet {
-                projectURL?.stopAccessingSecurityScopedResource()
-            }
-            didSet {
-                if let projectURL {
-                    loadProject(url: projectURL)
-                }
-            }
-        }
-        @Published var documentURLs: [URL] = []
-        @Published var selectedDocumentURL: URL? = nil
-        @Published var selectedName: String = "" 
+        @Published var project: Project?
+        @Published var documents: [Document]
+        @Published var selectedDocument: Document?
+        
+//        @Published var projectURL: URL? {
+//            willSet {
+//                projectURL?.stopAccessingSecurityScopedResource()
+//            }
+//            didSet {
+//                if let projectURL {
+//                    loadProject(url: projectURL)
+//                }
+//            }
+//        }
+//        @Published var documentURLs: [URL] = []
+//        @Published var selectedDocumentURL: URL? = nil
+//        @Published var selectedName: String = "" 
         
         var gpt: GPTifier = GPTifier()
 
         init() {
-            
+            self.documents = [Document]()
         }
 
         func loadProject(url: URL) {
@@ -29,52 +33,27 @@ extension ContentView {
                 print("ERROR failed to access security scoped resource \(url)")
                 return
             }
-
-            guard let files = try? FileManager.default.contentsOfDirectory(
-                at: url,
-                includingPropertiesForKeys: [
-                    .contentModificationDateKey,
-                    .creationDateKey,
-                    .typeIdentifierKey
-                ],
-                options:.skipsHiddenFiles
-            ) else { 
-                return
-            }
-            self.documentURLs = files.filter( { !$0.hasDirectoryPath })
-            self.selectedDocumentURL = nil
+            self.project = Project(url: url)
+            self.documents = self.project?.documents ?? [Document]()
+            self.selectedDocument = nil
         }
         
-        func newDocument(name: String = "Untitled", suffix: String = "txt") -> URL? {
-            guard let projectURL else { return  nil }
-            let untitledDotTxt = projectURL.appendingPathComponent("\(name).\(suffix)")
-            if !self.documentURLs.contains(where: { $0 == untitledDotTxt}),
-               !FileManager.default.fileExists(atPath: untitledDotTxt.absoluteString) {
-                try? "".write(to: untitledDotTxt, atomically: false, encoding: .utf8)
-                return untitledDotTxt
-            } else {
-                for ix in 1...255 {
-                    let untitledDotTxtIx = projectURL.appendingPathComponent("\(name) \(ix).\(suffix)")
-                    if !self.documentURLs.contains(where: { $0 == untitledDotTxtIx}),
-                       !FileManager.default.fileExists(atPath: untitledDotTxtIx.absoluteString) {
-                        try? "".write(to: untitledDotTxtIx, atomically: false, encoding: .utf8)
-                        return untitledDotTxtIx
-                    }
-                }
-            }
-            return nil
-        } 
-        
-        func delete(document: URL) {
-            if document.deleteFile() {
-                if document == selectedDocumentURL {
-                    self.selectedDocumentURL = nil
-                }
-                documentURLs.removeAll(where: { $0 == document })
+        func newDocument(name: String = "Untitled", suffix: String = "txt") {
+            if let project, let newDoc = project.newDocument(name: name, suffix: suffix) {
+                self.selectedDocument = newDoc
+                self.documents.append(newDoc)
             }
         }
         
-//        func rename(document: URL, newName: String) {
+        func delete(document: Document) {
+            document.delete()
+            if document == self.selectedDocument {
+                self.selectedDocument = nil
+            }
+            self.documents.removeAll(where: { $0 == document })
+        }
+        
+//        func rename(document: Document, newName: String) {
 //            if newName != document.lastPathComponent,
 //               let newURL = document.renameFile(name: newName),
 //               let ix = self.documentURLs.firstIndex(of: document) {

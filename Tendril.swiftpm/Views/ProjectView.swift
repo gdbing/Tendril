@@ -6,20 +6,20 @@ extension ContentView {
         
         var body: some View {
             VStack {
-                List(viewModel.documentURLs, id: \.self, selection: $viewModel.selectedDocumentURL) { documentURL in
-                    Text(documentURL.lastPathComponent)
+                List(viewModel.documents, id: \.self, selection: $viewModel.selectedDocument) { document in
+                    Text(document.name)
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button("Delete", role: .destructive) {
-                                viewModel.delete(document: documentURL)
+                                viewModel.delete(document: document)
                             }
                         }
                         .contextMenu {
                             Button("Delete", role: .destructive) {
-                                viewModel.delete(document:documentURL)
+                                viewModel.delete(document:document)
                             }
                         }
                 }
-                .navigationTitle(viewModel.projectURL?.lastPathComponent ?? "")
+                .navigationTitle(viewModel.project?.name ?? "")
                 .navigationBarTitleDisplayMode(.inline)
             }
         }
