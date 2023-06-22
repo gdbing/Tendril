@@ -45,8 +45,8 @@ extension ContentView {
         }
         
         func rename(document: Document, newName: String) {
-            if newName.count > 0, newName != document.name {
-                let newDocument = document.renamed(name: newName)
+            if newName.count > 0, newName != document.name, let project {
+                let newDocument = project.rename(document: document, name: newName)
                 if let ix = self.documents.firstIndex(of: document) {
                     self.documents.replaceSubrange(ix...ix, with: [newDocument])
                 }

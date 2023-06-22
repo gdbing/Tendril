@@ -22,6 +22,7 @@ struct DocumentView: UIViewRepresentable {
         textView.delegate = context.coordinator
         textView.isScrollEnabled = true
         textView.isEditable = true
+        textView.allowsEditingTextAttributes = true
         textView.isUserInteractionEnabled = true
         textView.scrollsToTop = true
         textView.backgroundColor = UIColor.systemBackground
@@ -72,12 +73,14 @@ struct DocumentView: UIViewRepresentable {
         
         func textViewDidChange(_ textView: UITextView) {
             self.parent.document?.write(text: textView.text)
+            // TODO optional optimization?, save old Ranges and check if greyRanges have changed
             self.parent.document?.write(greyRanges: textView.attributedText.greyRanges)
         }
         
-        func textViewDidChangeSelection(_ textView: UITextView) {
+        func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
             textView.setTextColor(.label)
-        }
+            return true
+        }        
     }
 }
 

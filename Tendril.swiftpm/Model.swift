@@ -57,6 +57,13 @@ struct Project {
         }
         return nil
     }
+    
+    func rename(document: Document, name: String) -> Document {
+        let newDoc = document.renamed(name: name)
+        let projFile = self.readProjectFile().renamedDocument(from: document.name, to: name)
+        self.writeProjectFile(file: projFile)
+        return newDoc
+    } 
 }
 
 extension Project: Hashable {}
@@ -66,32 +73,49 @@ extension Project {
         get { self.url.appendingPathComponent("tendril.proj") }
     }
     
-    private func readProjectFile() -> ProjectFile? {
-        if let data = try? Data(contentsOf: self.projFileURL, options: .mappedIfSafe) {
-            return try? JSONDecoder().decode(ProjectFile.self, from: data)
+    private func readProjectFile() -> ProjectFile {
+        if let data = try? Data(contentsOf: self.projFileURL, options: .mappedIfSafe), 
+            let project = try? JSONDecoder().decode(ProjectFile.self, from: data) {
+            return project
         }
-        return nil
+        return ProjectFile(greyRanges: [:])
     }
         
     func readGreyRangesFor(document: Document) -> [NSRange] {
-        if let project = readProjectFile() , let ranges = project.greyRanges[document.name] {
+        let project = readProjectFile()
+        if let ranges = project.greyRanges[document.name] {
             return ranges
         } else {
             return []
         }
     }
     
-    func writeGreyRanges(_ ranges: [NSRange], document: Document) {
-        var project = self.readProjectFile() ?? ProjectFile(greyRanges: [:])
-        project.greyRanges[document.name] = ranges
-            if let jsonData: Data = try? JSONEncoder().encode(project) {
-                self.projFileURL.writeFile(data: jsonData)
+    func writeProjectFile(file: ProjectFile) {
+        if let jsonData: Data = try? JSONEncoder().encode(file) {
+            self.projFileURL.writeFile(data: jsonData)
         }
+    }
+    
+    func writeGreyRanges(_ ranges: [NSRange], document: Document) {
+        var project = self.readProjectFile()
+        guard project.greyRanges[document.name] != ranges else { return }
+
+        project.greyRanges[document.name] = ranges
+        self.writeProjectFile(file: project)
     }
 }
 
 struct ProjectFile: Codable {
     var greyRanges: [String:[NSRange]]
+    
+    func renamedDocument(from: String, to: String) -> ProjectFile {
+        var ranges = self.greyRanges
+        if let value = ranges[from] {
+            ranges.removeValue(forKey: from)
+            ranges[to] = value
+        }
+        return ProjectFile(greyRanges: ranges)
+    }
 }
 
 struct Document {
