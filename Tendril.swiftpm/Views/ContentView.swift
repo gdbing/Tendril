@@ -3,6 +3,7 @@ import SwiftChatGPT
 
 struct ContentView: View {
     @StateObject var viewModel = ViewModel()
+    @EnvironmentObject private var settings: Settings
 
     @State private var showingSettings: Bool = false
     @State private var showImporter = false
@@ -59,12 +60,12 @@ struct ContentView: View {
                     .keyboardShortcut(.return, modifiers: [.command])
                     .disabled(viewModel.gpt.isWriting)
                 }
-//                ToolbarItem(placement: .automatic) {
-//                    if let wordCount = viewModel.gpt.wordCount {
-//                        Text("\(self.settings.model) | \(String(format: "%.1f°", self.settings.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
-//                            .monospacedDigit()
-//                    }
-//                }
+                ToolbarItem(placement: .automatic) {
+                    if let wordCount = viewModel.gpt.wordCount {
+                        Text("\(self.settings.model) | \(String(format: "%.1f°", self.settings.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
+                            .monospacedDigit()
+                    }
+                }
             }
         })
         .fileImporter(

@@ -27,17 +27,16 @@ struct DocumentView: UIViewRepresentable {
         textView.backgroundColor = UIColor.systemBackground
         textView.font = UIFont.systemFont(ofSize: 18)
         
-        textView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 150, right: 0)
-        
         return textView
     }
     
     func updateUIView(_ uiView: UITextView, context: Context) {
         if let document {
-            let documentText = document.readText()
-            if documentText != uiView.text {
-                uiView.text = documentText
-               // TODO document.readGrey()
+            let text = document.readText()
+            let greys = document.readGreyRanges()
+            if text != uiView.text {
+                let attrText = NSMutableAttributedString(text, greyRanges: greys)
+                uiView.attributedText = attrText
                 uiView.isEditable = true
                 let topOffset = CGPoint(x: 0, y: 0)
                 uiView.setContentOffset(topOffset, animated: false)
@@ -53,8 +52,9 @@ struct DocumentView: UIViewRepresentable {
             let insetSize = width > maxWidth ? ((width - maxWidth) / 2) : 0.0 
             uiView.textContainerInset = UIEdgeInsets(top: 0.0,
                                                      left: insetSize, 
-                                                     bottom: 0.0,
+                                                     bottom: 300.0,
                                                      right: insetSize)
+//            uiView.contentInset = UIEdgeInsets
         }
         return nil // default behaviour, use proposed size
     }
@@ -72,7 +72,7 @@ struct DocumentView: UIViewRepresentable {
         
         func textViewDidChange(_ textView: UITextView) {
             self.parent.document?.write(text: textView.text)
-            // TODO document.write(grey: )
+            self.parent.document?.write(greyRanges: textView.attributedText.greyRanges)
         }
         
         func textViewDidChangeSelection(_ textView: UITextView) {

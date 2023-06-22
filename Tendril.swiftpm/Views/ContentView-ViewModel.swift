@@ -2,7 +2,7 @@ import SwiftUI
 
 extension ContentView {
     class ViewModel: ObservableObject {
-        //        @EnvironmentObject private var settings: Settings
+//        @EnvironmentObject private var settings: Settings
         
         @Published var project: Project? {
             willSet { project?.stopAccessingFolder() }
@@ -45,7 +45,7 @@ extension ContentView {
         }
         
         func rename(document: Document, newName: String) {
-            if newName != document.name {
+            if newName.count > 0, newName != document.name {
                 let newDocument = document.renamed(name: newName)
                 if let ix = self.documents.firstIndex(of: document) {
                     self.documents.replaceSubrange(ix...ix, with: [newDocument])

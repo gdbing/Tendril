@@ -1,14 +1,12 @@
 import SwiftUI
 
 struct Project {
-    private var url: URL
-    var name: String
-//    var tags: [Tag]
+    private let url: URL
+    let name: String
     
     init(url: URL) {
         self.url = url
         self.name = url.lastPathComponent
-//        self.tags = [Tag]()
     }
     
     func startAccessingFolder() -> Bool {
@@ -18,7 +16,7 @@ struct Project {
     func stopAccessingFolder() {
         self.url.stopAccessingSecurityScopedResource()
     }
-
+    
     func readDocuments() -> [Document] {
         guard let files = try? FileManager.default.contentsOfDirectory(
             at: self.url,
@@ -30,7 +28,8 @@ struct Project {
         
         return files
             .filter { !$0.hasDirectoryPath }
-            .map( { Document(url: $0) } )
+//            .filter { $0.lastPathComponent != "tendril.proj" }
+            .map( { Document(project: self, url: $0) } )
     }
     
     func newDocument(name: String, suffix: String) -> Document? {
@@ -51,7 +50,7 @@ struct Project {
         if let newDocURL = findAvailableURLFor(name) {
             do {
                 try "".write(to: newDocURL, atomically: false, encoding: .utf8)
-                return Document(url: newDocURL)
+                return Document(project: self, url: newDocURL)
             } catch {
                 print("ERROR creating new document \(name)")
             }
@@ -60,22 +59,56 @@ struct Project {
     }
 }
 
+extension Project: Hashable {}
+
+extension Project {
+    private var projFileURL: URL {
+        get { self.url.appendingPathComponent("tendril.proj") }
+    }
+    
+    private func readProjectFile() -> ProjectFile? {
+        if let data = try? Data(contentsOf: self.projFileURL, options: .mappedIfSafe) {
+            return try? JSONDecoder().decode(ProjectFile.self, from: data)
+        }
+        return nil
+    }
+        
+    func readGreyRangesFor(document: Document) -> [NSRange] {
+        if let project = readProjectFile() , let ranges = project.greyRanges[document.name] {
+            return ranges
+        } else {
+            return []
+        }
+    }
+    
+    func writeGreyRanges(_ ranges: [NSRange], document: Document) {
+        var project = self.readProjectFile() ?? ProjectFile(greyRanges: [:])
+        project.greyRanges[document.name] = ranges
+            if let jsonData: Data = try? JSONEncoder().encode(project) {
+                self.projFileURL.writeFile(data: jsonData)
+        }
+    }
+}
+
+struct ProjectFile: Codable {
+    var greyRanges: [String:[NSRange]]
+}
+
 struct Document {
     private var url: URL
-    var name: String
-//    var tags: [Tag]
-    var grayRanges: [NSRange]
+    private let project: Project
     
-    init(url: URL) {
+    var name: String
+    
+    init(project: Project, url: URL) {
+        self.project = project
         self.url = url
         self.name = url.lastPathComponent
-//        self.tags = [Tag]()
-        self.grayRanges = [NSRange]()
     }
     
     func delete() {
         if self.url.deleteFile() {
-            // project remove all trace
+            // TODO project remove all trace
         }
     }
     
@@ -83,22 +116,21 @@ struct Document {
         return self.url.readFile() ?? ""
     }
     
-    func readGrey() -> [NSRange]? {
-        // TODO
-        return nil
+    func readGreyRanges() -> [NSRange] {
+        return self.project.readGreyRangesFor(document: self)
     }
     
     func write(text: String) {
         self.url.writeFile(text: text)
     }
     
-    func write(grey: [NSRange]) {
-        // TODO
+    func write(greyRanges: [NSRange]) {
+        self.project.writeGreyRanges(greyRanges, document: self)
     }
     
- func renamed(name: String) -> Document {
-        if let newURL = try? url.renameFile(name: name) {
-            return Document(url: newURL)
+    func renamed(name: String) -> Document {
+        if let newURL = url.renameFile(name: name) {
+            return Document(project: self.project, url: newURL)
         }
         return self
     }
@@ -109,7 +141,3 @@ extension Document: Equatable, Hashable {
         return lhs.url == rhs.url
     }
 }
-
-//struct Tag: Hashable {
-//    let name: String
-//}

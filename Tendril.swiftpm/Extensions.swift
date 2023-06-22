@@ -64,35 +64,40 @@ extension URL {
             print("Error writing to file: \(error)")
         }
     }
+    
+    func writeFile(data: Data) {
+        do {
+            try data.write(to: self, options: [])
+        } catch {
+            print("Error writing to file: \(error)")
+        }
+    }
 }
 
-extension NSAttributedString {
-    struct RangedAttribute {
-        let range: NSRange
-        let attribute: Any
-    }
-    
-    convenience init(_ string: String, attrs: [RangedAttribute]) {
+extension NSAttributedString {    
+    convenience init(_ string: String, greyRanges: [NSRange]) {
         let mutableString = NSMutableAttributedString(string: string)
-        mutableString.addAttribute(.font, value: UIFont.systemFont(ofSize: 18), range: NSRange(location: 0, length: string.count))
-        for attr in attrs {
-            mutableString.addAttribute(.foregroundColor, value: attr.attribute, range: attr.range)
+        let fullRange = NSRange(location: 0, length: string.count)
+        mutableString.addAttribute(.font, value: UIFont.systemFont(ofSize: 18), range: fullRange)
+        mutableString.addAttribute(.foregroundColor, value: UIColor.label, range: fullRange)
+        for range in greyRanges {
+            mutableString.addAttribute(.foregroundColor, value: UIColor.secondaryLabel, range: range)
         } 
         self.init(attributedString: mutableString)
     }
     
-    var rangedAttributes: [RangedAttribute] {
+    var greyRanges: [NSRange] {
         get {
-            var ars = [RangedAttribute]()
+            var ranges = [NSRange]()
             self.enumerateAttribute(.foregroundColor, 
                                     in: NSRange(location: 0, length: self.length), 
                                     options: [], 
                                     using: { value,range,_ in
-                if let value {
-                    ars.append(RangedAttribute(range: range, attribute: value))
+                if UIColor.secondaryLabel == value as? NSObject {
+                    ranges.append(range)
                 }
             })
-            return ars
+            return ranges
         }
     }
 }

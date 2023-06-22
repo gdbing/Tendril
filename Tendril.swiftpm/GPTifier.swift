@@ -73,8 +73,10 @@ class GPTifier: ObservableObject {
                         if let result {
                             DispatchQueue.main.async {
                                 textView.selectedTextRange = selectionPoint
+                                textView.setTextColor(UIColor.secondaryLabel)
                                 textView.insertText(result)
                                 selectionPoint = textView.selectedTextRange
+                                textView.setTextColor(UIColor.label)
                             }
                         }
                     }
