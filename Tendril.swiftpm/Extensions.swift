@@ -18,17 +18,7 @@ extension String {
     }
 }
 
-extension URL {
-    func deleteFile() -> Bool {
-        do {
-            try FileManager.default.removeItem(at: self)
-        } catch {
-            print("Error deleting the file: \(self.absoluteString) \(error)")
-            return false
-        }
-        return true
-    }
-    
+extension URL {    
     func renameFile(name: String) -> URL? {
         let newURL = self
             .deletingLastPathComponent()

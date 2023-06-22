@@ -37,7 +37,13 @@ extension ContentView {
         }
         
         func delete(document: Document) {
-            document.delete()
+            do {
+                try document.delete()
+            } catch {
+                print("ERROR unable to delete document \(document.name)")
+            }
+            // TODO we could check if the backing file still exists and only
+            // remove the UI indications if it doesn't but ¯\_(ツ)_/¯
             if document == self.selectedDocument {
                 self.selectedDocument = nil
             }

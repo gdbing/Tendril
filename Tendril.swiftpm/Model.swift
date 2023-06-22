@@ -130,10 +130,12 @@ struct Document {
         self.name = url.lastPathComponent
     }
     
-    func delete() {
-        if self.url.deleteFile() {
-            // TODO project remove all trace
-        }
+    func delete() throws {
+//        do {
+            try FileManager.default.removeItem(at: self.url)
+//        } catch {
+//            print("Error deleting the file: \(self.url.absoluteString) \(error)")
+//        }
     }
     
     func readText() -> String {
