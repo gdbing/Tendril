@@ -9,7 +9,7 @@ struct ContentView: View {
     @State private var showImporter = false
     
     var body: some View {
-        NavigationSplitView(sidebar: {
+        NavigationSplitView {
             ProjectView(viewModel: viewModel)
                 .toolbar {
                     if viewModel.project != nil {
@@ -29,7 +29,7 @@ struct ContentView: View {
                         }).keyboardShortcut("o", modifiers: [.command]) 
                     }
                 }
-        }, detail: {
+        } detail: {
             ZStack {
                 DocumentView(document: $viewModel.selectedDocument, gpt: viewModel.gpt)
                 if let selectedDocument = viewModel.selectedDocument {
@@ -37,6 +37,7 @@ struct ContentView: View {
                         .navigationTitle(Binding(get: { selectedDocument.name }, 
                                                  set: { viewModel.rename(document: selectedDocument, newName: $0) } ))
                         .navigationBarTitleDisplayMode(.inline)
+                        .toolbarRole(.editor)
                 }
             }
             .sheet(isPresented: $showingSettings) {
@@ -67,7 +68,7 @@ struct ContentView: View {
                     }
                 }
             }
-        })
+        }
         .fileImporter(
             isPresented: $showImporter, 
             allowedContentTypes: [.folder]) { result in

@@ -29,6 +29,7 @@ struct Project {
         return files
             .filter { !$0.hasDirectoryPath }
 //            .filter { $0.lastPathComponent != "tendril.proj" }
+//            .filter { !$0.lastPathComponent.hasPrefix("#") }
             .map( { Document(project: self, url: $0) } )
     }
     

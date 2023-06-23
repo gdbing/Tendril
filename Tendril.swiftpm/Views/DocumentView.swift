@@ -73,7 +73,6 @@ struct DocumentView: UIViewRepresentable {
         
         func textViewDidChange(_ textView: UITextView) {
             self.parent.document?.write(text: textView.text)
-            // TODO optional optimization?, save old Ranges and check if greyRanges have changed
             self.parent.document?.write(greyRanges: textView.attributedText.greyRanges)
         }
         
