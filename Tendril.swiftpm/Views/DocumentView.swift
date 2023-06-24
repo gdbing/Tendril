@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftChatGPT
 
 struct DocumentView: View {
     @Binding var document: Document?

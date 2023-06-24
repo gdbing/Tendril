@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftChatGPT
 
 struct ContentView: View {
     @StateObject var viewModel = ViewModel()

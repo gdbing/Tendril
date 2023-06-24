@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftChatGPT
 
 @main
 struct Tendril: App {
