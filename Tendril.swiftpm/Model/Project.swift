@@ -82,27 +82,21 @@ extension Project {
         return ProjectFile(greyRanges: [:])
     }
     
+    func writeProjectFile(file: ProjectFile) {
+        if let jsonData: Data = try? JSONEncoder().encode(file) {
+            self.projFileURL.writeFile(data: jsonData)
+        }
+    }
+}
+
+// Grey Ranges
+extension Project {
     func readGreyRangesFor(document: Document) -> [NSRange] {
         let project = readProjectFile()
         if let ranges = project.greyRanges[document.name] {
             return ranges
         } else {
             return []
-        }
-    }
-    
-    func readTagsFor(document: Document) -> [String] {
-        let project = readProjectFile()
-        if let tags = project.tags[document.name] {
-            return tags
-        } else {
-            return []
-        }
-    }
-    
-    func writeProjectFile(file: ProjectFile) {
-        if let jsonData: Data = try? JSONEncoder().encode(file) {
-            self.projFileURL.writeFile(data: jsonData)
         }
     }
     
@@ -113,7 +107,40 @@ extension Project {
         project.greyRanges[document.name] = ranges
         self.writeProjectFile(file: project)
     }
+}
+
+// Tags
+extension Project {
+    func readDocumentsWith(tag: String) -> [Document] {
+        var results = [Document]()
+        let dict: [String:[String]] = self.readProjectFile().tags
+        for name in dict.keys {
+            if let tags = dict[name], tags.contains(where: { $0 == tag }) {
+                results.append(Document(project: self, 
+                                        url: self.url.appendingPathComponent(name)))
+            }
+        }
+        return results
+    }
     
+    func readTags() -> [String] {
+        let project = readProjectFile()
+        var flattenedTags = Set<String>()
+        for values in project.tags.values {
+            flattenedTags.formUnion(values)
+        }
+        return Array(flattenedTags)
+    }
+    
+    func readTagsFor(document: Document) -> [String] {
+        let project = readProjectFile()
+        if let tags = project.tags[document.name] {
+            return tags
+        } else {
+            return []
+        }
+    }
+
     func addTag(_ tag: String, document: Document) {
         var project = self.readProjectFile()
         var docTags = project.tags[document.name] ?? []
@@ -139,6 +166,7 @@ struct ProjectFile: Codable {
     var greyRanges: [String:[NSRange]] = [:]
     var tags: [String:[String]] = [:]
     
+    // TODO the name of this method doesn't really make sense
     func renamedDocument(from: String, to: String) -> ProjectFile {
         var ranges = self.greyRanges
         if let value = ranges[from] {
