@@ -28,8 +28,8 @@ struct Project {
         
         return files
             .filter { !$0.hasDirectoryPath }
-//            .filter { $0.lastPathComponent != "tendril.proj" }
-//            .filter { !$0.lastPathComponent.hasPrefix("#") }
+        //            .filter { $0.lastPathComponent != "tendril.proj" }
+        //            .filter { !$0.lastPathComponent.hasPrefix("#") }
             .map( { Document(project: self, url: $0) } )
     }
     
@@ -81,11 +81,20 @@ extension Project {
         }
         return ProjectFile(greyRanges: [:])
     }
-        
+    
     func readGreyRangesFor(document: Document) -> [NSRange] {
         let project = readProjectFile()
         if let ranges = project.greyRanges[document.name] {
             return ranges
+        } else {
+            return []
+        }
+    }
+    
+    func readTagsFor(document: Document) -> [String] {
+        let project = readProjectFile()
+        if let tags = project.tags[document.name] {
+            return tags
         } else {
             return []
         }
@@ -100,14 +109,35 @@ extension Project {
     func writeGreyRanges(_ ranges: [NSRange], document: Document) {
         var project = self.readProjectFile()
         guard project.greyRanges[document.name] != ranges else { return }
-
+        
         project.greyRanges[document.name] = ranges
+        self.writeProjectFile(file: project)
+    }
+    
+    func addTag(_ tag: String, document: Document) {
+        var project = self.readProjectFile()
+        var docTags = project.tags[document.name] ?? []
+        guard !docTags.contains(where: { $0 == tag }) else { return }
+        
+        docTags.append(tag)
+        project.tags[document.name] = docTags
+        self.writeProjectFile(file: project)
+    }
+    
+    func removeTag(_ tag: String, document: Document) {
+        var project = self.readProjectFile()
+        var docTags = project.tags[document.name] ?? []
+        guard !docTags.contains(where: { $0 == tag }) else { return }
+        
+        docTags.removeAll(where: { $0 == tag })
+        project.tags[document.name] = docTags
         self.writeProjectFile(file: project)
     }
 }
 
 struct ProjectFile: Codable {
-    var greyRanges: [String:[NSRange]]
+    var greyRanges: [String:[NSRange]] = [:]
+    var tags: [String:[String]] = [:]
     
     func renamedDocument(from: String, to: String) -> ProjectFile {
         var ranges = self.greyRanges
@@ -115,56 +145,11 @@ struct ProjectFile: Codable {
             ranges.removeValue(forKey: from)
             ranges[to] = value
         }
-        return ProjectFile(greyRanges: ranges)
-    }
-}
-
-struct Document {
-    private var url: URL
-    private let project: Project
-    
-    var name: String
-    
-    init(project: Project, url: URL) {
-        self.project = project
-        self.url = url
-        self.name = url.lastPathComponent
-    }
-    
-    func delete() throws {
-//        do {
-            try FileManager.default.removeItem(at: self.url)
-//        } catch {
-//            print("Error deleting the file: \(self.url.absoluteString) \(error)")
-//        }
-    }
-    
-    func readText() -> String {
-        return self.url.readFile() ?? ""
-    }
-    
-    func readGreyRanges() -> [NSRange] {
-        return self.project.readGreyRangesFor(document: self)
-    }
-    
-    func write(text: String) {
-        self.url.writeFile(text: text)
-    }
-    
-    func write(greyRanges: [NSRange]) {
-        self.project.writeGreyRanges(greyRanges, document: self)
-    }
-    
-    func renamed(name: String) -> Document {
-        if let newURL = url.renameFile(name: name) {
-            return Document(project: self.project, url: newURL)
+        var tags = self.tags
+        if let value = tags[from] {
+            tags.removeValue(forKey: from)
+            tags[to] = value
         }
-        return self
-    }
-}
-
-extension Document: Equatable, Hashable {
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        return lhs.url == rhs.url
+        return ProjectFile(greyRanges: ranges, tags: tags)
     }
 }

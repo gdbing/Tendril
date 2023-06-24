@@ -62,7 +62,7 @@ class GPTifier: ObservableObject {
             let filteredWords = words.filter { !$0.isEmpty }
             let wordCount = filteredWords.count
             print("gptify \(self.chatGPT.model) | \(String(format: "%.1f°", self.chatGPT.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
-
+            
             Task {
                 switch await self.chatGPT.streamChatText(query: uneaten) {
                 case .failure(let error):

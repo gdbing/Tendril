@@ -55,7 +55,6 @@ struct DocumentView: UIViewRepresentable {
                                                      left: insetSize, 
                                                      bottom: 300.0,
                                                      right: insetSize)
-//            uiView.contentInset = UIEdgeInsets
         }
         return nil // default behaviour, use proposed size
     }
