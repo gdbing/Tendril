@@ -1,6 +1,15 @@
 {
   "pins" : [
     {
+      "identity" : "runestone",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gdbing/Runestone",
+      "state" : {
+        "branch" : "main",
+        "revision" : "599d8ae6cf3b5c0e80c223c225a3e327822f26e4"
+      }
+    },
+    {
       "identity" : "swiftchatgpt",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/gdbing/SwiftChatGPT",

@@ -35,13 +35,15 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/gdbing/SwiftChatGPT", "1.1.0"..<"2.0.0")
+        .package(url: "https://github.com/gdbing/SwiftChatGPT", "1.1.0"..<"2.0.0"),
+        .package(url: "https://github.com/gdbing/Runestone", .branch("main"))
     ],
     targets: [
         .executableTarget(
             name: "AppModule",
             dependencies: [
-                .product(name: "SwiftChatGPT", package: "SwiftChatGPT")
+                .product(name: "SwiftChatGPT", package: "SwiftChatGPT"),
+                .product(name: "Runestone", package: "runestone")
             ],
             path: ".",
             swiftSettings: [

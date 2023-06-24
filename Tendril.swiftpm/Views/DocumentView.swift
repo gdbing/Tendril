@@ -1,13 +1,95 @@
 import SwiftUI
 import SwiftChatGPT
+import Runestone
 
 struct DocumentView: View {
     @Binding var document: Document?
     var gpt: GPTifier
 
     var body: some View {
-        UIKitDocumentView(document: $document, gpt: gpt)
+//        UIKitDocumentView(document: $document, gpt: gpt)
+        RunestoneDocumentView(document: document, gpt: gpt)
     }
+}
+
+struct RunestoneDocumentView: UIViewRepresentable {
+    @State private var textView = TextView()
+
+    var document: Document?
+    var gpt: GPTifier
+
+    @ScaledMetric(relativeTo: .body) var maxWidth = 680
+
+    func makeUIView(context: Context) -> TextView {
+        if let document {
+            textView.text = document.readText()
+        }
+        textView.delegate = context.coordinator
+        
+//        textView.isScrollEnabled = true
+//        textView.isEditable = true
+//        textView.allowsEditingTextAttributes = true
+//        textView.isUserInteractionEnabled = true
+//        textView.scrollsToTop = true
+//        textView.backgroundColor = UIColor.systemBackground
+//        textView.font = UIFont.systemFont(ofSize: 18)
+        
+        return textView
+    }
+    
+    func updateUIView(_ uiView: TextView, context: Context) {
+        if let document {
+            let text = document.readText()
+            let greys = document.readGreyRanges()
+            if text != uiView.text {
+                uiView.text = text
+//                let attrText = NSMutableAttributedString(text, greyRanges: greys)
+//                uiView.attributedText = attrText
+                uiView.isEditable = true
+                let topOffset = CGPoint(x: 0, y: 0)
+                uiView.setContentOffset(topOffset, animated: false)
+            }
+        } else {
+            uiView.text = ""
+            uiView.isEditable = false
+        }
+
+    }
+    
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: TextView, context: Context) -> CGSize? {
+        if let width = proposal.width {
+            let insetSize = width > maxWidth ? ((width - maxWidth) / 2) : 0.0
+            uiView.textContainerInset = UIEdgeInsets(top: 0.0,
+                                                     left: insetSize,
+                                                     bottom: 300.0,
+                                                     right: insetSize)
+        }
+        return nil // default behaviour, use proposed size
+    }
+    
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, TextViewDelegate, UIScrollViewDelegate {
+        var parent: RunestoneDocumentView
+        
+        init(_ parent: RunestoneDocumentView) {
+            self.parent = parent
+        }
+        
+        func textViewDidChange(_ textView: TextView) {
+            self.parent.document?.write(text: textView.text)
+//            self.parent.document?.write(greyRanges: textView.attributedText.greyRanges)
+        }
+        
+//        func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+//            textView.setTextColor(.label)
+//            return true
+//        }
+    }
+
 }
 
 struct UIKitDocumentView: UIViewRepresentable {
