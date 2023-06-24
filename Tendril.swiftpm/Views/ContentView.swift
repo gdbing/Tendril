@@ -30,7 +30,7 @@ struct ContentView: View {
                 }
         } detail: {
             ZStack {
-                DocumentView(document: $viewModel.selectedDocument, gpt: viewModel.gpt)
+                DocumentView(document: $viewModel.selectedDocument)
                 if let selectedDocument = viewModel.selectedDocument {
                     Color.clear
                         .navigationTitle(Binding(get: { selectedDocument.name }, 
@@ -50,21 +50,6 @@ struct ContentView: View {
                         Image(systemName: "gear")
                     })
                     .keyboardShortcut(",", modifiers: [.command]) 
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button(action: {
-                        viewModel.gpt.GPTify()
-                    }, label: {
-                        Image(systemName: "bubble.left.fill")
-                    })
-                    .keyboardShortcut(.return, modifiers: [.command])
-                    .disabled(viewModel.gpt.isWriting)
-                }
-                ToolbarItem(placement: .automatic) {
-                    if let wordCount = viewModel.gpt.wordCount {
-                        Text("\(self.settings.model) | \(String(format: "%.1f°", self.settings.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
-                            .monospacedDigit()
-                    }
                 }
             }
         }

@@ -36,12 +36,12 @@ struct Project {
     func newDocument(name: String, suffix: String) -> Document? {
         let findAvailableURLFor = { (_ name: String) -> URL? in
             let untitledDotTxt = self.url.appendingPathComponent("\(name).\(suffix)")
-            if !FileManager.default.fileExists(atPath: untitledDotTxt.absoluteString) {
+            if !FileManager.default.fileExists(atPath: untitledDotTxt.path) {
                 return untitledDotTxt
             } else {
                 for ix in 1...255 {
                     let untitledDotTxtIx = self.url.appendingPathComponent("\(name) \(ix).\(suffix)")
-                    if !FileManager.default.fileExists(atPath: untitledDotTxtIx.absoluteString) {
+                    if !FileManager.default.fileExists(atPath: untitledDotTxtIx.path) {
                         return untitledDotTxtIx
                     }
                 }

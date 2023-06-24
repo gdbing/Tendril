@@ -2,16 +2,12 @@ import SwiftUI
 
 extension ContentView {
     class ViewModel: ObservableObject {
-//        @EnvironmentObject private var settings: Settings
-        
         @Published var project: Project? {
             willSet { project?.stopAccessingFolder() }
         }
         @Published var documents: [Document]
         @Published var selectedDocument: Document?
-        
-        var gpt: GPTifier = GPTifier()
-        
+                
         init() {
             self.documents = [Document]()
         }

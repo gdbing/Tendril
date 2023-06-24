@@ -2,10 +2,27 @@ import SwiftUI
 
 struct DocumentView: View {
     @Binding var document: Document?
-    var gpt: GPTifier
+    var gpt: GPTifier = GPTifier()
 
     var body: some View {
         UIKitDocumentView(document: $document, gpt: gpt)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: {
+                        gpt.GPTify()
+                    }, label: {
+                        Image(systemName: "bubble.left.fill")
+                    })
+                    .keyboardShortcut(.return, modifiers: [.command])
+                    .disabled(gpt.isWriting)
+                }
+//                ToolbarItem(placement: .automatic) {
+//                    if let wordCount = viewModel.gpt.wordCount {
+//                        Text("\(self.settings.model) | \(String(format: "%.1f°", self.settings.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
+//                            .monospacedDigit()
+//                    }
+//                }
+            }
     }
 }
 
