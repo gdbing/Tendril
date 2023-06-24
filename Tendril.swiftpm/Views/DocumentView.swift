@@ -1,7 +1,16 @@
 import SwiftUI
 import SwiftChatGPT
 
-struct DocumentView: UIViewRepresentable {
+struct DocumentView: View {
+    @Binding var document: Document?
+    var gpt: GPTifier
+
+    var body: some View {
+        UIKitDocumentView(document: $document, gpt: gpt)
+    }
+}
+
+struct UIKitDocumentView: UIViewRepresentable {
     @State private var textView = UITextView()
     @Binding var document: Document?
     
@@ -14,7 +23,7 @@ struct DocumentView: UIViewRepresentable {
     
     @ScaledMetric(relativeTo: .body) var maxWidth = 680    
         
-    func makeUIView(context: Context) -> UITextView {       
+    func makeUIView(context: Context) -> UITextView {
         self.gpt.textView = textView
         if let document {
             textView.text = document.readText()
@@ -64,9 +73,9 @@ struct DocumentView: UIViewRepresentable {
     }
         
     class Coordinator: NSObject, UITextViewDelegate {        
-        var parent: DocumentView
+        var parent: UIKitDocumentView
         
-        init(_ parent: DocumentView) {
+        init(_ parent: UIKitDocumentView) {
             self.parent = parent
         }
         
