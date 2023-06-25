@@ -7,7 +7,6 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
 class GPTifier: ObservableObject {
     var chatGPT: ChatGPT = ChatGPT(key: "")
     var textView: UITextView?
-    private var settings: Settings = Settings()
 
     @Published var isWriting = false
     
@@ -40,6 +39,7 @@ class GPTifier: ObservableObject {
             return
         }
         
+        let settings = Settings()
         self.chatGPT.key = settings.apiKey
         self.chatGPT.model = settings.model
         self.chatGPT.temperature = Float(settings.temperature)

@@ -19,7 +19,7 @@ extension ContentView {
                             }
                         }
                 }
-                .navigationTitle(viewModel.project?.name ?? "")
+                .navigationTitle(viewModel.projectName ?? "")
                 .navigationBarTitleDisplayMode(.inline)
             }
         }

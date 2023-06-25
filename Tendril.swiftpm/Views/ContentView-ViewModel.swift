@@ -2,14 +2,17 @@ import SwiftUI
 
 extension ContentView {
     class ViewModel: ObservableObject {
-        @Published var project: Project? {
+        private var project: Project? {
             willSet { project?.stopAccessingFolder() }
         }
+        @Published var projectName: String?
         @Published var documents: [Document]
         @Published var selectedDocument: Document?
-                
+        @Published var tags: [String]
+        
         init() {
             self.documents = [Document]()
+            self.tags = [String]()
         }
         
         func loadProject(url: URL) {
@@ -21,8 +24,11 @@ extension ContentView {
             }
             
             self.project = project
-            self.documents = self.project!.readDocuments()
+            self.projectName = project.name
+            self.documents = project.readDocuments()
             self.selectedDocument = nil
+            self.tags = project.readTags()
+            // TODO: self.tags needs to be updated as tags are added or removed from documents
         }
         
         func newDocument(name: String = "Untitled", suffix: String = "txt") {
@@ -35,15 +41,13 @@ extension ContentView {
         func delete(document: Document) {
             do {
                 try document.delete()
+                if document == self.selectedDocument {
+                    self.selectedDocument = nil
+                }
+                self.documents.removeAll(where: { $0 == document })
             } catch {
                 print("ERROR unable to delete document \(document.name)")
             }
-            // TODO we could check if the backing file still exists and only
-            // remove the UI indications if it doesn't but ¯\_(ツ)_/¯
-            if document == self.selectedDocument {
-                self.selectedDocument = nil
-            }
-            self.documents.removeAll(where: { $0 == document })
         }
         
         func rename(document: Document, newName: String) {

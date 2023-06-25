@@ -5,13 +5,14 @@ struct ContentView: View {
     @EnvironmentObject private var settings: Settings
 
     @State private var showingSettings: Bool = false
-    @State private var showImporter = false
+    @State private var showingImporter = false
+    @State private var showingTags = false
     
     var body: some View {
         NavigationSplitView {
             ProjectView(viewModel: viewModel)
                 .toolbar {
-                    if viewModel.project != nil {
+                    if viewModel.projectName != nil {
                         ToolbarItem(placement: .primaryAction) {
                             Button(action: {
                                 viewModel.newDocument()
@@ -22,7 +23,7 @@ struct ContentView: View {
                     }
                     ToolbarItem(placement: .automatic) {
                         Button(action: {
-                            self.showImporter = true
+                            self.showingImporter = true
                         }, label: {
                             Image(systemName: "folder")
                         }).keyboardShortcut("o", modifiers: [.command]) 
@@ -31,6 +32,22 @@ struct ContentView: View {
         } detail: {
             ZStack {
                 DocumentView(document: $viewModel.selectedDocument)
+                
+                if self.showingTags {
+                    VStack {
+                        TagView()
+                        Button(action: {
+                            self.showingTags.toggle()
+                        }) {
+                            Text("Close")
+                        }
+                    }
+                    .background(Color(UIColor.systemBackground))
+                    .transition(.move(edge: self.showingTags ? .bottom : .top))
+                    .animation(Animation.easeInOut(duration: 0.3))
+                    //https://stackoverflow.com/questions/63223542/swiftui-animation-slide-in-and-out#63223600
+                }
+                
                 if let selectedDocument = viewModel.selectedDocument {
                     Color.clear
                         .navigationTitle(Binding(get: { selectedDocument.name }, 
@@ -39,6 +56,7 @@ struct ContentView: View {
                         .toolbarRole(.editor)
                 }
             }
+
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
             }
@@ -51,10 +69,20 @@ struct ContentView: View {
                     })
                     .keyboardShortcut(",", modifiers: [.command]) 
                 }
-            }
+                if viewModel.selectedDocument != nil {
+                    ToolbarItem(placement: .automatic) {
+                        Button(action: {
+                            self.showingTags = true
+                        }, label: {
+                            Image(systemName: "tag")
+                        })
+                        .keyboardShortcut("t", modifiers: [.command])
+                    }
+                }
+           }
         }
         .fileImporter(
-            isPresented: $showImporter, 
+            isPresented: $showingImporter, 
             allowedContentTypes: [.folder]) { result in
                 do {
                     let selectedFolder: URL = try result.get()
@@ -63,5 +91,12 @@ struct ContentView: View {
                     print(error.localizedDescription)
                 }
             }
+    }
+}
+
+struct TagView: View {
+    
+    var body: some View {
+        Text("Tags")
     }
 }
