@@ -18,6 +18,7 @@ struct Project {
     }
     
     func readDocuments() -> [Document] {
+        // TODO: Deal with icloud offloaded files
         guard let files = try? FileManager.default.contentsOfDirectory(
             at: self.url,
             includingPropertiesForKeys: [],
@@ -30,6 +31,19 @@ struct Project {
             .filter { !$0.hasDirectoryPath }
         //            .filter { $0.lastPathComponent != "tendril.proj" }
         //            .filter { !$0.lastPathComponent.hasPrefix("#") }
+            .map( { Document(project: self, url: $0) } )
+    }
+    
+    func readArchivedDocuments() -> [Document] {
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: self.url.appendingPathComponent("archive"),
+            includingPropertiesForKeys: [],
+            options:.skipsHiddenFiles
+        ) else {
+            return [Document]()
+        }
+        return files
+            .filter { !$0.hasDirectoryPath }
             .map( { Document(project: self, url: $0) } )
     }
     

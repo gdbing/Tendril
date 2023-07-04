@@ -10,14 +10,37 @@ class GPTifier: ObservableObject {
 
     @Published var isWriting = false
     
-//    var wordCount: Int? {
-//        get {
-//            guard let textView else { return nil } 
-//            let words = textView.text.components(separatedBy: .whitespacesAndNewlines)
-//            let filteredWords = words.filter { !$0.isEmpty }
-//            return filteredWords.count
-//        }
-//    }
+    func updateWordCount() -> Int? {
+//        return nil
+        guard let textView else {
+            return nil
+        }
+        let text = self.eat(textView: textView)
+        let uneaten = text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
+        let words = uneaten.components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+        return words.count
+    }
+    
+    struct Message: Codable {
+        public let role: String?
+        public let content: String
+    }
+
+    // TODO: Director mode
+    //       Parse "Summary: blah blah blah" as user message
+    //       Parse "Direction: blah blah blah" as system message
+    //       Ideally, do syntax highlighting of them
+    func messagify(text: String) -> [Message] {
+        var messages = [Message]()
+        for line in text.components(separatedBy: .newlines) {
+            if line.hasPrefix("System: ") {
+                let systemMessage = Message(role: "system", content: "")
+                messages.append(systemMessage)
+            }
+        }
+        return messages
+    }
     
     func eat(textView: UITextView) -> String {
         if let selection = textView.selectedTextRange {
@@ -35,10 +58,11 @@ class GPTifier: ObservableObject {
     }
     
     func GPTify() {
+        print("GPTify")
+        
         guard !self.isWriting, let textView = self.textView else {
             return
         }
-        
         let settings = Settings()
         self.chatGPT.key = settings.apiKey
         self.chatGPT.model = settings.model
@@ -58,10 +82,10 @@ class GPTifier: ObservableObject {
                 textView.setTextColor(.label)
             }
 
-            let words = uneaten.components(separatedBy: .whitespacesAndNewlines)
-            let filteredWords = words.filter { !$0.isEmpty }
-            let wordCount = filteredWords.count
-            print("gptify \(self.chatGPT.model) | \(String(format: "%.1f°", self.chatGPT.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
+//            let words = uneaten.components(separatedBy: .whitespacesAndNewlines)
+//            let filteredWords = words.filter { !$0.isEmpty }
+//            let wordCount = filteredWords.count
+//            print("gptify \(self.chatGPT.model) | \(String(format: "%.1f°", self.chatGPT.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
             
             Task {
                 switch await self.chatGPT.streamChatText(query: uneaten) {

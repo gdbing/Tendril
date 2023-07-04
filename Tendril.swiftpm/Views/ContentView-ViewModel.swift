@@ -6,12 +6,16 @@ extension ContentView {
             willSet { project?.stopAccessingFolder() }
         }
         @Published var projectName: String?
+        
         @Published var documents: [Document]
+        @Published var archivedDocuments: [Document]
         @Published var selectedDocument: Document?
+        
         @Published var tags: [String]
         
         init() {
             self.documents = [Document]()
+            self.archivedDocuments = [Document]()
             self.tags = [String]()
         }
         
@@ -25,8 +29,11 @@ extension ContentView {
             
             self.project = project
             self.projectName = project.name
+            
             self.documents = project.readDocuments()
+            self.archivedDocuments = project.readArchivedDocuments()
             self.selectedDocument = nil
+            
             self.tags = project.readTags()
             // TODO: self.tags needs to be updated as tags are added or removed from documents
         }
@@ -50,7 +57,18 @@ extension ContentView {
             }
         }
         
+        func archive(document: Document) {
+            let archivedDocument = document.renamed(name: "archive/\(document.name)")
+            if document == self.selectedDocument {
+                self.selectedDocument = nil
+            }
+            self.documents.removeAll(where: { $0 == document })
+            self.archivedDocuments.append(archivedDocument)
+        }
+
+        
         func rename(document: Document, newName: String) {
+            // TODO: handle if newName contains "/"
             if newName.count > 0, newName != document.name, let project {
                 let newDocument = project.rename(document: document, name: newName)
                 if let ix = self.documents.firstIndex(of: document) {

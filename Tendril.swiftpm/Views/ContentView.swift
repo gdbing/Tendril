@@ -44,7 +44,7 @@ struct ContentView: View {
                     }
                     .background(Color(UIColor.systemBackground))
                     .transition(.move(edge: self.showingTags ? .bottom : .top))
-                    .animation(Animation.easeInOut(duration: 0.3))
+//                    .animation(Animation.easeInOut(duration: 0.3))
                     //https://stackoverflow.com/questions/63223542/swiftui-animation-slide-in-and-out#63223600
                 }
                 

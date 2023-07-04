@@ -3,38 +3,62 @@ import SwiftUI
 struct DocumentView: View {
     @Binding var document: Document?
     var gpt: GPTifier = GPTifier()
-
+    @State var wordCount: Int? 
+    
     var body: some View {
-        UIKitDocumentView(document: $document, gpt: gpt)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button(action: {
-                        gpt.GPTify()
-                    }, label: {
-                        Image(systemName: "bubble.left.fill")
-                    })
-                    .keyboardShortcut(.return, modifiers: [.command])
-                    .disabled(gpt.isWriting)
+        ZStack(alignment: .topTrailing) {
+            UIKitDocumentView(document: $document, gpt: gpt, wordCount: $wordCount)
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button(action: {
+                            gpt.GPTify()
+                        }, label: {
+                            Image(systemName: "bubble.left.fill")
+                        })
+                        .keyboardShortcut(.return, modifiers: [.command])
+                        .disabled(gpt.isWriting)
+                    }
+                    //                ToolbarItem(placement: .automatic) {
+                    //                    if let wordCount = viewModel.gpt.wordCount {
+                    //                        Text("\(self.settings.model) | \(String(format: "%.1f°", self.settings.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
+                    //                            .monospacedDigit()
+                    //                    }
+                    //                }
                 }
-//                ToolbarItem(placement: .automatic) {
-//                    if let wordCount = viewModel.gpt.wordCount {
-//                        Text("\(self.settings.model) | \(String(format: "%.1f°", self.settings.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
-//                            .monospacedDigit()
-//                    }
-//                }
+            if let wordCount {
+                Text("\(wordCount) words ")
+                    .monospacedDigit()
+                //                .background {
+                //                    Color(UIColor.systemBackground)
+                //                }
             }
+
+        }
     }
 }
 
 struct UIKitDocumentView: UIViewRepresentable {
     @State private var textView = UITextView()
     @Binding var document: Document?
+    @Binding var wordCount: Int?
+    func updateWordCount() {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let count = self.gpt.updateWordCount()
+            if let count {
+                DispatchQueue.main.async {
+                    self.wordCount = count
+                }
+            }
+        }
+
+    }
     
     private var gpt: GPTifier
     
-    init(document: Binding<Document?>, gpt: GPTifier) {
+    init(document: Binding<Document?>, gpt: GPTifier, wordCount: Binding<Int?>) {
         _document = document
         self.gpt = gpt
+        _wordCount = wordCount
     }
     
     @ScaledMetric(relativeTo: .body) var maxWidth = 680    
@@ -52,7 +76,8 @@ struct UIKitDocumentView: UIViewRepresentable {
         textView.scrollsToTop = true
         textView.backgroundColor = UIColor.systemBackground
         textView.font = UIFont.systemFont(ofSize: 18)
-        
+        self.updateWordCount()
+
         return textView
     }
     
@@ -71,6 +96,7 @@ struct UIKitDocumentView: UIViewRepresentable {
             uiView.text = ""
             uiView.isEditable = false
         }
+        self.updateWordCount()
     }
     
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
@@ -98,6 +124,10 @@ struct UIKitDocumentView: UIViewRepresentable {
         func textViewDidChange(_ textView: UITextView) {
             self.parent.document?.write(text: textView.text)
             self.parent.document?.write(greyRanges: textView.attributedText.greyRanges)
+        }
+        
+        func textViewDidChangeSelection(_ textView: UITextView) {
+            self.parent.updateWordCount()
         }
         
         func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
