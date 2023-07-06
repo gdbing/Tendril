@@ -69,10 +69,10 @@ class GPTifier: ObservableObject {
         self.chatGPT.temperature = Float(settings.temperature)
         self.chatGPT.systemMessage = settings.systemMessage
 
-        let text = self.eat(textView: textView)
-        let uneaten = text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
-        
-        DispatchQueue.main.async {            
+        DispatchQueue.main.async {
+            let text = self.eat(textView: textView)
+            let uneaten = text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
+
             self.isWriting = true
             var selectionPoint = textView.selectedTextRange
             textView.setTextColor(.secondaryLabel)
