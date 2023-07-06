@@ -82,13 +82,10 @@ class GPTifier: ObservableObject {
                 textView.setTextColor(.label)
             }
 
-//            let words = uneaten.components(separatedBy: .whitespacesAndNewlines)
-//            let filteredWords = words.filter { !$0.isEmpty }
-//            let wordCount = filteredWords.count
-//            print("gptify \(self.chatGPT.model) | \(String(format: "%.1f°", self.chatGPT.temperature)) | \(wordCount) \(wordCount == 1 ? "word " : "words")")
-            
             Task {
-                switch await self.chatGPT.streamChatText(query: uneaten) {
+                let messages = [(role: "system", content: self.chatGPT.systemMessage),
+                                (role: "user", content: uneaten)]
+                switch await self.chatGPT.streamChatText(queries: messages) {
                 case .failure(let error):
                     textView.insertText("\nCommunication Error:\n\(error.description)")
                     return
