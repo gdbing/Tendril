@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct DocumentView: View {
-    @ObservedObject var controller = DocumentController()
+    @StateObject var controller = DocumentController()
     @Binding var document: Document?
     
     var body: some View {
@@ -11,7 +11,6 @@ struct DocumentView: View {
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         Button(action: {
-                            print("button down")
                             controller.gptIfy()
                         }, label: {
                             Image(systemName: "bubble.left.fill")
@@ -24,7 +23,6 @@ struct DocumentView: View {
                 Text("\(wordCount) words ")
                     .monospacedDigit()
             }
-            
         }
     }
 }
@@ -47,6 +45,7 @@ extension DocumentView {
             self.controller.textView = textView
             if let document {
                 textView.text = document.readText()
+                controller.updateWordCount()
             }
             textView.delegate = context.coordinator
             textView.isScrollEnabled = true
@@ -56,7 +55,6 @@ extension DocumentView {
             textView.scrollsToTop = true
             textView.backgroundColor = UIColor.systemBackground
             textView.font = UIFont.systemFont(ofSize: 18)
-            controller.updateWordCount()
             
             return textView
         }
@@ -69,6 +67,7 @@ extension DocumentView {
                 if text != uiView.text {
                     let attrText = NSMutableAttributedString(text, greyRanges: greys)
                     uiView.attributedText = attrText
+                    controller.updateWordCount()
                     uiView.isEditable = true
                     let topOffset = CGPoint(x: 0, y: 0)
                     uiView.setContentOffset(topOffset, animated: false)
@@ -77,7 +76,6 @@ extension DocumentView {
                 uiView.text = ""
                 uiView.isEditable = false
             }
-            controller.updateWordCount()
         }
         
         func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
@@ -108,7 +106,7 @@ extension DocumentView {
             }
             
             func textViewDidChangeSelection(_ textView: UITextView) {
-                self.parent.controller.updateWordCount()
+                self.parent.controller.updateWordCount() // this basically catches textViewDidChange too
             }
             
             func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
@@ -123,5 +121,16 @@ extension UITextView {
         var attributes = self.typingAttributes
         attributes.updateValue(color, forKey: NSAttributedString.Key.foregroundColor)
         self.typingAttributes = attributes
+    }
+    
+    func precedingText() -> String? {
+        if let selection = self.selectedTextRange,
+           let precedingRange = self.textRange(from: self.beginningOfDocument, to: selection.end),
+           let precedingText = self.text(in: precedingRange),
+           precedingText.count > 0 {
+            return precedingText
+        } else {
+            return nil
+        }
     }
 }

@@ -71,7 +71,9 @@ extension NSAttributedString {
         mutableString.addAttribute(.font, value: UIFont.systemFont(ofSize: 18), range: fullRange)
         mutableString.addAttribute(.foregroundColor, value: UIColor.label, range: fullRange)
         for range in greyRanges {
-            mutableString.addAttribute(.foregroundColor, value: UIColor.secondaryLabel, range: range)
+            if range.location + range.length <= string.count {
+                mutableString.addAttribute(.foregroundColor, value: UIColor.secondaryLabel, range: range)
+            }
         } 
         self.init(attributedString: mutableString)
     }
