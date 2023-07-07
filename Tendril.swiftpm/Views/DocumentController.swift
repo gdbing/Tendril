@@ -34,16 +34,16 @@ extension DocumentView {
             self.chatGPT.systemMessage = settings.systemMessage
             
             DispatchQueue.main.async {
-                self.isWriting = true
-                textView.isUserInteractionEnabled = false
-//                textView.isEditable = false
-
-                defer {
-                    self.isWriting = false
-                    textView.isUserInteractionEnabled = true
-//                    textView.isEditable = true
-                }
                 Task {
+                    self.isWriting = true
+                    textView.isEditable = false
+                    textView.isSelectable = false
+                    
+                    defer {
+                        self.isWriting = false
+                        textView.isEditable = true
+                        textView.isSelectable = true
+                    }
                     switch await self.chatGPT.streamChatText(queries: messages) {
                     case .failure(let error):
                         self.textView?.insertText("\nCommunication Error:\n\(error.description)")
@@ -104,7 +104,8 @@ extension DocumentView {
                     queryType = .System
                 } else if line.hasPrefix("Direction: ") {
                     append(accumulation)
-                    accumulation = String(line.trimmingPrefix("Direction: "))
+//                    accumulation = String(line.trimmingPrefix("Direction: "))
+                    accumulation = line
                     newLine = false
                     
                     queryType = .Direction
