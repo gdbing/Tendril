@@ -29,8 +29,8 @@ struct Project {
         
         return files
             .filter { !$0.hasDirectoryPath }
-//            .filter { $0.lastPathComponent != "tendril.proj" }
-        //            .filter { !$0.lastPathComponent.hasPrefix("#") }
+            .filter { $0.lastPathComponent != "tendril.proj" }
+            .filter { !$0.lastPathComponent.hasPrefix("#") }
             .map( { Document(project: self, url: $0) } )
     }
     
@@ -138,12 +138,28 @@ extension Project {
     }
     
     func readTags() -> [String] {
-        let project = readProjectFile()
-        var flattenedTags = Set<String>()
-        for values in project.tags.values {
-            flattenedTags.formUnion(values)
+//        let project = readProjectFile()
+//        var flattenedTags = Set<String>()
+//        for values in project.tags.values {
+//            flattenedTags.formUnion(values)
+//        }
+//        return Array(flattenedTags)
+        
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: self.url,
+            includingPropertiesForKeys: [],
+            options:.skipsHiddenFiles
+        ) else {
+            return [String]()
         }
-        return Array(flattenedTags)
+        
+        return files
+//            .filter { !$0.hasDirectoryPath }
+//            .filter { $0.lastPathComponent != "tendril.proj" }
+            .filter { $0.lastPathComponent.hasPrefix("#") }
+//            .map( { Document(project: self, url: $0) } )
+            .map { $0.lastPathComponent }
+
     }
     
     func readTagsFor(document: Document) -> [String] {
