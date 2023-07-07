@@ -16,7 +16,16 @@ extension DocumentView {
             guard !self.isWriting, let textView else { return }
             guard let text = textView.precedingText() else { return } // get text before selection
             guard let neededWords = self.omitNeedlessWords(text) else { return } // remove commented out text
-            guard let messages = self.massage(text: text) else { return } // convert text into messages
+            guard let queries = self.massage(text: neededWords) else { return } // convert text into messages
+            let messages = [(role: "system", content: self.chatGPT.systemMessage)] + queries
+            
+            for message in messages {
+                print("""
+                         role: \(message.role)
+                      content: \(message.content)
+
+                      """)
+            }
             
             let settings = Settings()
             self.chatGPT.key = settings.apiKey
@@ -35,7 +44,6 @@ extension DocumentView {
 //                    textView.isEditable = true
                 }
                 Task {
-                    let m = [(role: "system", content: self.chatGPT.systemMessage)] + messages
                     switch await self.chatGPT.streamChatText(queries: messages) {
                     case .failure(let error):
                         self.textView?.insertText("\nCommunication Error:\n\(error.description)")
@@ -63,7 +71,84 @@ extension DocumentView {
         }
         
         func massage(text: String) -> [(role: String, content: String)]? {
-            return [(role: "user", content: text)]
+            enum QueryType {
+                case System
+                case Direction
+                case User
+                case Response
+            }
+            
+            var queryType = QueryType.Response
+            var messages = [(role: String, content: String)]()
+            let append = { (content: String) in
+                switch queryType {
+                case .System:
+                    messages.append((role: "system", content: content))
+                case .Direction:
+                    messages.append((role: "user", content: content))
+                case .User:
+                    messages.append((role: "user", content: content))
+                default:
+                    messages.append((role: "assistant", content: content))
+                }
+            }
+            
+            var accumulation: String = ""
+            var newLine = false
+            for line in text.components(separatedBy: "\n") {
+                if line.hasPrefix("System: ") {
+                    append(accumulation)
+                    accumulation = String(line.trimmingPrefix("System: "))
+                    newLine = false
+                    
+                    queryType = .System
+                } else if line.hasPrefix("Direction: ") {
+                    append(accumulation)
+                    accumulation = String(line.trimmingPrefix("Direction: "))
+                    newLine = false
+                    
+                    queryType = .Direction
+                } else if line.hasPrefix("user: ") {
+                    append(accumulation)
+                    accumulation = String(line.trimmingPrefix("user: "))
+                    newLine = false
+                    
+                    queryType = .User
+                } else if line.hasPrefix("Summary: ") {
+                    append(accumulation)
+                    accumulation = line
+                    newLine = false
+                    
+                    queryType = .User
+                } else if line == "-" {
+                    append(accumulation)
+                    accumulation = ""
+                    newLine = false
+                    
+                    queryType = .Response
+                } else if line == "" {
+                    if queryType == .Response {
+                        if accumulation != "" {
+                            newLine = true
+                        } 
+                    } else {
+                        append(accumulation)
+                        accumulation = ""
+                        queryType = .Response
+                    }
+                } else {
+                    if newLine {
+                        accumulation += "\n"
+                        newLine = false
+                    }
+                    if accumulation != "" {
+                        accumulation += "\n"
+                    }
+                    accumulation += line
+                }
+            }
+            append(accumulation)
+            return messages.filter { $0.content != "" }
         }
         
         func updateWordCount() {
@@ -76,74 +161,5 @@ extension DocumentView {
                 }
             }
         }
-        
-        func parse(_ input: String) -> [String] {
-            enum QueryType {
-                case Direction
-                case Summary
-                case Response
-                case System
-            }
-            var queryType = QueryType.Response
-            var accumulation: String = ""
-            var newLine = false
-            var output = [String]()
-            for line in input.components(separatedBy: "\n") {
-                if line.hasPrefix("System: ") {
-                    output.append(accumulation)
-                    accumulation = String(line.trimmingPrefix("System: "))
-                    newLine = false
-                    
-                    queryType = .System
-                } else if line.hasPrefix("Direction: ") {
-                    output.append(accumulation)
-                    accumulation = String(line.trimmingPrefix("Direction: "))
-                    newLine = false
-                    
-                    queryType = .Direction
-                } else if line.hasPrefix("Summary: ") {
-                    output.append(accumulation)
-                    accumulation = line
-                    newLine = false
-                    
-                    queryType = .Summary
-                } else if line.hasPrefix("-") {
-                    output.append(accumulation)
-                    accumulation = ""
-                    newLine = false
-                    
-                    queryType = .Response
-                } else if line == "" {
-                    if queryType == .Direction {
-                        output.append(accumulation)
-                        accumulation = ""
-                        
-                    } else if queryType == .Summary {
-                        output.append(accumulation)
-                        accumulation = ""
-                        
-                    } else if queryType == .System {
-                        output.append(accumulation)
-                        accumulation = ""
-                        
-                    } else if accumulation != "" {
-                        newLine = true
-                    }
-                    queryType = .Response
-                } else {
-                    if newLine {
-                        accumulation += "\n"
-                        newLine = false
-                    }
-                    if accumulation != "" {
-                        accumulation += "\n"
-                    }
-                    accumulation += line
-                }
-            }
-            output.append(accumulation)
-            return output.filter{ $0 != "" }
-        }
     }
-    
 }
