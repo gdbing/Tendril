@@ -4,46 +4,91 @@ extension ContentView {
     struct ProjectView: View {
         @StateObject var viewModel: ViewModel
         
+        @Binding var selectedDocument: Document?
+        @State var selectedTag: Document?
+        
+        var filteredDocuments: [Document] {
+            if let tag = self.selectedTag {
+                return viewModel.documents.filter {
+                    let tagNames = $0.readTags()
+                    return tagNames.contains(tag.name)
+                }
+            }
+            return viewModel.documents
+        }
+        
         var body: some View {
-            List(selection: $viewModel.selectedDocument) {
-//                Section {
-                    ForEach(viewModel.documents, id: \.self) { document in
+            if viewModel.projectName != nil {
+                List(selection: $selectedDocument) {
+                    ForEach(filteredDocuments, id: \.self) { document in
                         Text(document.name)
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 Button("Delete", role: .destructive) {
                                     viewModel.delete(document: document)
+                                    if document == self.selectedDocument {
+                                        self.selectedDocument = nil
+                                    }
                                 }
                                 Button {
                                     viewModel.archive(document: document)
+                                    if document == self.selectedDocument {
+                                        self.selectedDocument = nil
+                                    }
                                 } label: {
                                     Label("Archive", systemImage: "archivebox")
                                 }
-                                
                             }
                             .contextMenu {
                                 Button("Delete", role: .destructive) {
                                     viewModel.delete(document:document)
+                                    if document == self.selectedDocument {
+                                        self.selectedDocument = nil
+                                    }
                                 }
                                 Button {
                                     viewModel.archive(document: document)
+                                    if document == self.selectedDocument {
+                                        self.selectedDocument = nil
+                                    }
                                 } label: {
                                     Label("Archive", systemImage: "archivebox")
                                 }
                             }
                     }
-                    Section {
-                        ForEach(viewModel.tags, id: \.self) { tag in
-                            Text(tag)
-                                .font(.callout)
+                    Divider()
+                    ForEach(viewModel.tags, id: \.self) { tag in
+                        ZStack(alignment: .leading) {
+                            Text(tag.name)
+                                .font(Font.system(.body).smallCaps())
+                                .foregroundColor(self.selectedTag == tag ? .white : .accentColor)
+                                .padding(6)
+                                .background(
+                                    Rectangle()
+                                    .fill(self.selectedTag == tag ? Color.accentColor : Color.clear)
+                                    .cornerRadius(12))
+                            Rectangle()
+                                .fill(Color.accentColor)
+                                .opacity(0.01)
+                                .onTapGesture {
+                                    if self.selectedTag == tag {
+                                        self.selectedTag = nil
+                                        if self.selectedDocument == tag {
+                                            self.selectedDocument = nil
+                                        }
+                                    } else {
+                                        self.selectedTag = tag
+                                    }
+                                }
                         }
-                    } header: {
-                        Text("Tags")
                     }
-//                }
-            }.listStyle(.automatic)
-//                .navigationTitle(viewModel.projectName ?? "")
-//                .navigationBarTitleDisplayMode(.inline)
+                }.listStyle(.automatic)
+                    .navigationTitle(viewModel.projectName ?? "")
+                    .navigationBarTitleDisplayMode(.inline)
+                
+            } else {
+                Color.clear
             }
+        }
     }
 }
 

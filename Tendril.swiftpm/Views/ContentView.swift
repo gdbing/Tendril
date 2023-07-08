@@ -4,34 +4,48 @@ struct ContentView: View {
     @StateObject var viewModel = ViewModel()
     @EnvironmentObject private var settings: Settings
 
+    @State var selectedDocument: Document?
+    
     @State private var showingSettings: Bool = false
     @State private var showingImporter = false
     @State private var showingTags = false
     
     var body: some View {
         NavigationSplitView {
-            ProjectView(viewModel: viewModel)
+            ProjectView(viewModel: viewModel, selectedDocument: self.$selectedDocument)
                 .toolbar {
                     if viewModel.projectName != nil {
                         ToolbarItem(placement: .primaryAction) {
                             Button(action: {
-                                viewModel.newDocument()
+                                self.selectedDocument = viewModel.newDocument()
+
                             }, label: {
                                 Image(systemName: "square.and.pencil")
                             }).keyboardShortcut("n", modifiers: [.command])
                         }
-                    }
-                    ToolbarItem(placement: .automatic) {
-                        Button(action: {
-                            self.showingImporter = true
-                        }, label: {
-                            Image(systemName: "folder")
-                        }).keyboardShortcut("o", modifiers: [.command]) 
+                        ToolbarTitleMenu {
+                            Button(action: {
+                                self.showingImporter = true
+                            }, label: {
+                                HStack {
+                                    Image(systemName: "folder")
+                                    Text("Project")
+                                }
+                            })
+                        }
+                    } else {
+                        ToolbarItem(placement: .automatic) {
+                            Button(action: {
+                                self.showingImporter = true
+                            }, label: {
+                                Image(systemName: "folder")
+                            }).keyboardShortcut("o", modifiers: [.command])
+                        }
                     }
                 }
         } detail: {
             ZStack {
-                DocumentView(document: $viewModel.selectedDocument)
+                DocumentView(document: self.$selectedDocument)
                 
                 if self.showingTags {
                     VStack {
@@ -48,10 +62,13 @@ struct ContentView: View {
                     //https://stackoverflow.com/questions/63223542/swiftui-animation-slide-in-and-out#63223600
                 }
                 
-                if let selectedDocument = viewModel.selectedDocument {
+                if let selectedDocument = self.selectedDocument {
                     Color.clear
                         .navigationTitle(Binding(get: { selectedDocument.name }, 
-                                                 set: { viewModel.rename(document: selectedDocument, newName: $0) } ))
+                                                 set: {
+                            let newDoc = viewModel.rename(document: selectedDocument, newName: $0)
+                            self.selectedDocument = newDoc
+                        } ))
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbarRole(.editor)
                 }
@@ -67,9 +84,9 @@ struct ContentView: View {
                     }, label: {
                         Image(systemName: "gear")
                     })
-                    .keyboardShortcut(",", modifiers: [.command]) 
+                    .keyboardShortcut(",", modifiers: [.command])
                 }
-                if viewModel.selectedDocument != nil {
+                if self.selectedDocument != nil {
                     ToolbarItem(placement: .automatic) {
                         Button(action: {
                             self.showingTags = true

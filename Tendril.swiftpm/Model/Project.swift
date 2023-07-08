@@ -137,7 +137,7 @@ extension Project {
         return results
     }
     
-    func readTags() -> [String] {
+    func readTags() -> [Document] {
 //        let project = readProjectFile()
 //        var flattenedTags = Set<String>()
 //        for values in project.tags.values {
@@ -150,15 +150,14 @@ extension Project {
             includingPropertiesForKeys: [],
             options:.skipsHiddenFiles
         ) else {
-            return [String]()
+            return [Document]()
         }
         
         return files
 //            .filter { !$0.hasDirectoryPath }
 //            .filter { $0.lastPathComponent != "tendril.proj" }
             .filter { $0.lastPathComponent.hasPrefix("#") }
-//            .map( { Document(project: self, url: $0) } )
-            .map { $0.lastPathComponent }
+            .map( { Document(project: self, url: $0) } )
 
     }
     
