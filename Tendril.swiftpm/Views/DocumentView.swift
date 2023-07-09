@@ -44,6 +44,7 @@ extension DocumentView {
         func makeUIView(context: Context) -> UITextView {
             self.controller.textView = textView
             if let document {
+                textView.becomeFirstResponder()
                 textView.text = document.readText()
                 controller.updateWordCount()
             }

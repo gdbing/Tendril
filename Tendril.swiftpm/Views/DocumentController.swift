@@ -38,26 +38,24 @@ extension DocumentView {
                     self.isWriting = true
                     textView.isEditable = false
                     textView.isSelectable = false
+                    textView.setTextColor(UIColor.secondaryLabel)
                     
                     defer {
                         self.isWriting = false
                         textView.isEditable = true
                         textView.isSelectable = true
+                        textView.setTextColor(UIColor.label)
                     }
+                    
                     switch await self.chatGPT.streamChatText(queries: messages) {
                     case .failure(let error):
                         self.textView?.insertText("\nCommunication Error:\n\(error.description)")
                         return
                     case .success(let results):
-                        var selectionPoint = textView.selectedTextRange
                         for try await result in results {
                             if let result {
                                 DispatchQueue.main.async {
-                                    textView.selectedTextRange = selectionPoint
-                                    textView.setTextColor(UIColor.secondaryLabel)
                                     textView.insertText(result)
-                                    selectionPoint = textView.selectedTextRange
-                                    textView.setTextColor(UIColor.label)
                                 }
                             }
                         }
@@ -155,8 +153,8 @@ extension DocumentView {
         func updateWordCount() {
             DispatchQueue.main.async {
                 if let text = self.textView?.precedingText() {
-                    let uneaten = text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
-                    let words = uneaten.components(separatedBy: .whitespacesAndNewlines)
+//                    let uneaten = text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
+                    let words = text.components(separatedBy: .whitespacesAndNewlines)
                         .filter { !$0.isEmpty }
                     self.wordCount = words.count
                 }
