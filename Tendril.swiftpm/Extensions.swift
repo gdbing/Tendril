@@ -67,7 +67,7 @@ extension URL {
 extension NSAttributedString {    
     convenience init(_ string: String, greyRanges: [NSRange]) {
         let mutableString = NSMutableAttributedString(string: string)
-        let fullRange = NSRange(location: 0, length: string.count)
+        let fullRange = NSRange(location: 0, length: (string as NSString).length)
         mutableString.addAttribute(.font, value: UIFont.systemFont(ofSize: 18), range: fullRange)
         mutableString.addAttribute(.foregroundColor, value: UIColor.label, range: fullRange)
         for range in greyRanges {
