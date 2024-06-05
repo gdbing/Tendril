@@ -65,9 +65,14 @@ struct ContentView: View {
                 if let selectedDocument = self.selectedDocument {
                     Color.clear
                         .navigationTitle(Binding(get: { selectedDocument.name }, 
-                                                 set: {
-                            let newDoc = viewModel.rename(document: selectedDocument, newName: $0)
-                            self.selectedDocument = newDoc
+                                                 set: { 
+                            if $0 != selectedDocument.name, 
+                                let newDoc = viewModel.rename(document: selectedDocument, newName: $0) {
+                                // weird dumb swiftui bug (?)
+                                // using rename from navigationTitle calls the setter twice
+                                // second time will fail because file is already renamed
+                                self.selectedDocument = newDoc
+                            }
                         } ))
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbarRole(.editor)
