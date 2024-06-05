@@ -27,7 +27,9 @@ struct SettingsView: View {
                     Text("gpt-4-32k").tag("gpt-4-32k")
                     Text("gpt-4-0314").tag("gpt-4-0314")
                     Text("gpt-4-0613").tag("gpt-4-0613")
+                    Text("gpt-4-turbo").tag("gpt-4-turbo")
                     Text("gpt-4-1106-preview").tag("gpt-4-1106-preview")
+                    Text("gpt-4o").tag("gpt-4o")
                 }
                 Section(header: Text("Persona")) {
                     ForEach($settings.personae) { $persona in
