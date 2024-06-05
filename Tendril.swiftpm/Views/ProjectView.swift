@@ -15,6 +15,10 @@ extension ContentView {
                 }
             }
             return viewModel.documents
+                .sorted(by: {
+                    $0.name.lowercased() < $1.name.lowercased()
+            })
+
         }
         
         var body: some View {
