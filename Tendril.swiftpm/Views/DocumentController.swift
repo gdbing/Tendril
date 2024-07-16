@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftAnthropic
 import SwiftChatGPT
 
 fileprivate let betweenVs = try! NSRegularExpression(pattern: "^vvv[\\s\\S]*?\\R\\^\\^\\^$\\R?", options: [.anchorsMatchLines])
@@ -12,6 +13,55 @@ extension DocumentView {
         var textView: UITextView?
         private var chatGPT: ChatGPT = ChatGPT(key: "")
         
+        func streamAnthropic() {
+            guard !self.isWriting, let textView else { return }
+            guard let text = textView.precedingText() else { return } // get text before selection
+            guard let neededWords = self.omitNeedlessWords(text) else { return } // remove commented out text
+            guard let queries = self.massage(text: neededWords) else { return } // convert text into messages
+
+            let settings = Settings()
+
+            let anthropicMessages = queries.map {
+                let role: MessageParameter.Message.Role = $0.role == "user" ? .user : .assistant
+                let content: MessageParameter.Message.Content = .text($0.content)
+                return MessageParameter.Message(role: role, content: content)
+            }
+            let parameters = MessageParameter(
+                model: .claude3Haiku,
+                messages: anthropicMessages,
+                maxTokens: 2048,
+                system: settings.systemMessage,
+                stream: true,
+                temperature: settings.temperature
+            )
+            let anthropicApiKey = ""
+            let service = AnthropicServiceFactory.service(apiKey: anthropicApiKey)
+            DispatchQueue.main.async {
+                Task {
+                    self.isWriting = true
+                    textView.isEditable = false
+                    textView.isSelectable = false
+                    textView.setTextColor(UIColor.secondaryLabel)
+
+                    defer {
+                        self.isWriting = false
+                        textView.isEditable = true
+                        textView.isSelectable = true
+                        textView.setTextColor(UIColor.label)
+                    }
+                    let stream = try await service.streamMessage(parameters)
+                    //                     isLoading = false
+                    for try await result in stream {
+                        let content = result.delta?.text ?? ""
+                        DispatchQueue.main.async {
+                            textView.insertText(content)
+                        }
+                    }
+
+                }
+            }
+        }
+
         func gptIfy() {
             guard !self.isWriting, let textView else { return }
             guard let text = textView.precedingText() else { return } // get text before selection

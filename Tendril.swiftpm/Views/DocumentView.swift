@@ -11,7 +11,8 @@ struct DocumentView: View {
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         Button(action: {
-                            controller.gptIfy()
+//                            controller.gptIfy()
+                            controller.streamAnthropic()
                         }, label: {
                             Image(systemName: "bubble.left.fill")
                         })
