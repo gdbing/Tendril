@@ -87,20 +87,24 @@ struct ContentView: View {
                     Button(action: {
                         self.showingSettings = true
                     }, label: {
-                        Image(systemName: "gear")
+                        HStack {
+                            Text(settings.model)
+
+                            Image(systemName: "gear")
+                        }
                     })
                     .keyboardShortcut(",", modifiers: [.command])
                 }
-                if self.selectedDocument != nil {
-                    ToolbarItem(placement: .automatic) {
-                        Button(action: {
-                            self.showingTags = true
-                        }, label: {
-                            Image(systemName: "tag")
-                        })
-                        .keyboardShortcut("t", modifiers: [.command])
-                    }
-                }
+//                if self.selectedDocument != nil {
+//                    ToolbarItem(placement: .automatic) {
+//                        Button(action: {
+//                            self.showingTags = true
+//                        }, label: {
+//                            Image(systemName: "tag")
+//                        })
+//                        .keyboardShortcut("t", modifiers: [.command])
+//                    }
+//                }
            }
         }
         .fileImporter(
