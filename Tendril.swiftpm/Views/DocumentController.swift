@@ -11,8 +11,18 @@ extension DocumentView {
         @Published var wordCount: Int?
         
         var textView: UITextView?
-        private var chatGPT: ChatGPT = ChatGPT(key: "")
-        
+
+        func gptIfy() {
+            switch Settings().model {
+            case "claude-3-opus-20240229", "claude-3-5-sonnet-20240620", "claude-3-haiku-20240307":
+                streamAnthropic()
+            case "gpt-3.5-turbo", "gpt-4o":
+                streamChatGPT()
+            default:
+                print("invalid model selected")
+            }
+        }
+
         func streamAnthropic() {
             guard !self.isWriting, let textView else { return }
             guard let text = textView.precedingText() else { return } // get text before selection
@@ -21,20 +31,29 @@ extension DocumentView {
 
             let settings = Settings()
 
+            guard let model: Model = {
+                switch settings.model {
+                case "claude-3-opus-20240229": return .claude3Opus
+                case "claude-3-5-sonnet-20240620": return .claude35Sonnet
+                case "claude-3-haiku-20240307": return .claude3Haiku
+                default: return nil
+                }
+            }() else { return }
+
             let anthropicMessages = queries.map {
                 let role: MessageParameter.Message.Role = $0.role == "user" ? .user : .assistant
                 let content: MessageParameter.Message.Content = .text($0.content)
                 return MessageParameter.Message(role: role, content: content)
             }
             let parameters = MessageParameter(
-                model: .claude3Haiku,
+                model: model,
                 messages: anthropicMessages,
                 maxTokens: 2048,
                 system: settings.systemMessage,
                 stream: true,
                 temperature: settings.temperature
             )
-            let anthropicApiKey = ""
+            let anthropicApiKey = settings.anthropicKey
             let service = AnthropicServiceFactory.service(apiKey: anthropicApiKey)
             DispatchQueue.main.async {
                 Task {
@@ -49,8 +68,8 @@ extension DocumentView {
                         textView.isSelectable = true
                         textView.setTextColor(UIColor.label)
                     }
+
                     let stream = try await service.streamMessage(parameters)
-                    //                     isLoading = false
                     for try await result in stream {
                         let content = result.delta?.text ?? ""
                         DispatchQueue.main.async {
@@ -62,27 +81,27 @@ extension DocumentView {
             }
         }
 
-        func gptIfy() {
+        func streamChatGPT() {
             guard !self.isWriting, let textView else { return }
             guard let text = textView.precedingText() else { return } // get text before selection
             guard let neededWords = self.omitNeedlessWords(text) else { return } // remove commented out text
             guard let queries = self.massage(text: neededWords) else { return } // convert text into messages
-            let messages = [(role: "system", content: self.chatGPT.systemMessage)] + queries
-            
-            for message in messages {
-                print("""
-                         role: \(message.role)
-                      content: \(message.content)
 
-                      """)
-            }
-            
             let settings = Settings()
-            self.chatGPT.key = settings.apiKey
-            self.chatGPT.model = settings.model
-            self.chatGPT.temperature = Float(settings.temperature)
-            self.chatGPT.systemMessage = settings.systemMessage
-            
+            let messages = [(role: "system", content: settings.systemMessage)] + queries
+
+//            for message in messages {
+//                print("""
+//                         role: \(message.role)
+//                      content: \(message.content)
+//
+//                      """)
+//            }
+
+            let chatGPT = ChatGPT(key: settings.apiKey)
+            chatGPT.model = settings.model
+            chatGPT.temperature = Float(settings.temperature)
+
             DispatchQueue.main.async {
                 Task {
                     self.isWriting = true
@@ -97,7 +116,7 @@ extension DocumentView {
                         textView.setTextColor(UIColor.label)
                     }
                     
-                    switch await self.chatGPT.streamChatText(queries: messages) {
+                    switch await chatGPT.streamChatText(queries: messages) {
                     case .failure(let error):
                         self.textView?.insertText("\nCommunication Error:\n\(error.description)")
                         return

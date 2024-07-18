@@ -12,7 +12,7 @@ extension Persona {
 }
 
 class Settings: ObservableObject {
-    @AppStorage("apiKey") 
+    @AppStorage("apiKey")
     var apiKey: String = "" {
         willSet {
             DispatchQueue.main.async {
@@ -20,8 +20,17 @@ class Settings: ObservableObject {
             }
         }
     }
-    
-    @AppStorage("temperature") 
+
+    @AppStorage("anthropicKey")
+    var anthropicKey: String = "" {
+        willSet {
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+    }
+
+    @AppStorage("temperature")
     var temperature: Double = 0.7 {
         willSet {
             DispatchQueue.main.async {
