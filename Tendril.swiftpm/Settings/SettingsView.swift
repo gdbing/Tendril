@@ -22,7 +22,7 @@ struct SettingsView: View {
                 }
                 Picker(selection: $settings.model, label: Text("Model")) {
                     // gpt-3.5-turbo-0301 and gpt-4-0314 will be deprecated and discontinued on Sept13,2023 
-                    Text("gpt-3.5-turbo").tag("gpt-3.5-turbo")
+//                    Text("gpt-3.5-turbo").tag("gpt-3.5-turbo")
 //                    Text("gpt-3.5-turbo-16k").tag("gpt-3.5-turbo-16k")
 //                    Text("gpt-3.5-turbo-0301").tag("gpt-3.5-turbo-0301")
 //                    Text("gpt-3.5-turbo-0613").tag("gpt-3.5-turbo-0613")
@@ -33,6 +33,7 @@ struct SettingsView: View {
 //                    Text("gpt-4-turbo").tag("gpt-4-turbo")
 //                    Text("gpt-4-1106-preview").tag("gpt-4-1106-preview")
                     Text("gpt-4o").tag("gpt-4o")
+                    Text("gpt-4o-mini").tag("gpt-4o-mini")
                     Text("claude-3-haiku").tag("claude-3-haiku-20240307")
                     Text("claude-3-5-sonnet").tag("claude-3-5-sonnet-20240620")
                     Text("claude-3-opus").tag("claude-3-opus-20240229")
