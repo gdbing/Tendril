@@ -28,7 +28,9 @@ extension DocumentView {
             guard let text = textView.precedingText() else { return } // get text before selection
             guard let neededWords = self.omitNeedlessWords(text) else { return } // remove commented out text
             guard let queries = self.massage(text: neededWords) else { return } // convert text into messages
-
+            guard let mergedQueries = self.merge(messages: queries) else { return }
+            
+            
             let settings = Settings()
 
             guard let model: Model = {
@@ -40,11 +42,15 @@ extension DocumentView {
                 }
             }() else { return }
 
-            let anthropicMessages = queries.map {
+            var anthropicMessages = mergedQueries.map {
                 let role: MessageParameter.Message.Role = $0.role == "user" ? .user : .assistant
                 let content: MessageParameter.Message.Content = .text($0.content)
                 return MessageParameter.Message(role: role, content: content)
             }
+            if anthropicMessages.first?.role != "user" {
+                anthropicMessages = [MessageParameter.Message(role: .user, content: .text(settings.systemMessage))] + anthropicMessages
+            }
+            
             let parameters = MessageParameter(
                 model: model,
                 messages: anthropicMessages,
@@ -54,6 +60,7 @@ extension DocumentView {
                 temperature: settings.temperature
             )
             let anthropicApiKey = settings.anthropicKey
+            
             let service = AnthropicServiceFactory.service(apiKey: anthropicApiKey)
             DispatchQueue.main.async {
                 Task {
@@ -219,12 +226,47 @@ extension DocumentView {
             return messages.filter { $0.content != "" }
         }
         
-        func updateWordCount() {
+        func merge(messages: [(role: String, content: String)]) -> [(role: String, content: String)]? {
+            var mergedMessages = [(role: String, content: String)]()
+            guard let firstMessage = messages.first else { return nil }
+            
+            var currentRole = firstMessage.role
+            var currentContent = firstMessage.content
+            for message in messages.dropFirst() {
+                if message.role == currentRole {
+                    currentContent += "\n\n" + message.content
+                } else {
+                    mergedMessages.append((role: currentRole, content: currentContent))
+                    currentRole = message.role
+                    currentContent = message.content
+                }
+            }
+            mergedMessages.append((role: currentRole, content: currentContent))
+            
+            return mergedMessages
+        }
+        
+        func updateWordCount(isEaten: Bool = false) {
+            var words: [String]? = nil
+
             DispatchQueue.main.async {
-                if let text = self.textView?.precedingText() {
-//                    let uneaten = text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
-                    let words = text.components(separatedBy: .whitespacesAndNewlines)
+                if let range = self.textView?.selectedTextRange,
+                   let text = self.textView?.text(in: range),
+                   !text.isEmpty {
+                    words = text.components(separatedBy: .whitespacesAndNewlines)
                         .filter { !$0.isEmpty }
+                } else 
+                if let text = self.textView?.precedingText() {
+                    if isEaten {
+                        let uneaten = text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
+                        words = uneaten.components(separatedBy: .whitespacesAndNewlines)
+                            .filter { !$0.isEmpty }
+                    } else {
+                        words = text.components(separatedBy: .whitespacesAndNewlines)
+                            .filter { !$0.isEmpty }
+                    }
+                }
+                if let words {
                     self.wordCount = words.count
                 }
             }
