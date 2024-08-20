@@ -33,6 +33,8 @@ struct SettingsView: View {
 //                    Text("gpt-4-turbo").tag("gpt-4-turbo")
 //                    Text("gpt-4-1106-preview").tag("gpt-4-1106-preview")
                     Text("gpt-4o").tag("gpt-4o")
+                    Text("gpt-4o-2024-05-13").tag("gpt-4o-2024-05-13")
+                    Text("gpt-4o-2024-08-06").tag("gpt-4o-2024-08-06")
                     Text("gpt-4o-mini").tag("gpt-4o-mini")
                     Text("claude-3-haiku").tag("claude-3-haiku-20240307")
                     Text("claude-3-5-sonnet").tag("claude-3-5-sonnet-20240620")
