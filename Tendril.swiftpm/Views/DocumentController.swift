@@ -23,6 +23,7 @@ extension DocumentView {
             }
         }
 
+
         func streamAnthropic() {
             guard !self.isWriting, let textView else { return }
             guard let text = textView.precedingText() else { return } // get text before selection
@@ -44,44 +45,66 @@ extension DocumentView {
 
             var anthropicMessages = mergedQueries.map {
                 let role: MessageParameter.Message.Role = $0.role == "user" ? .user : .assistant
+                if $0.content.hasSuffix("\n^CACHE") {
+                    let content = String($0.content.dropLast("\n^CACHE".count))
+                    print("cached ...\(content.suffix(40))")
+                    let cache = MessageParameter.Message.Content.ContentObject.cache(.init(type: .text, text: content, cacheControl: .init(type: .ephemeral)))
+                    return MessageParameter.Message(role: role, content: .list([cache]))
+                }
+                
                 let content: MessageParameter.Message.Content = .text($0.content)
                 return MessageParameter.Message(role: role, content: content)
             }
             if anthropicMessages.first?.role != "user" {
-                anthropicMessages = [MessageParameter.Message(role: .user, content: .text(settings.systemMessage))] + anthropicMessages
+                let firstMessage = MessageParameter.Message(role: .user, content: .text(settings.systemMessage))
+                anthropicMessages = [firstMessage] + anthropicMessages
             }
             
             let parameters = MessageParameter(
                 model: model,
                 messages: anthropicMessages,
                 maxTokens: 2048,
-                system: settings.systemMessage,
+                system: .text(settings.systemMessage),
                 stream: true,
-                temperature: settings.temperature
+                temperature: max(settings.temperature, 1.0)
             )
-            let anthropicApiKey = settings.anthropicKey
             
-            let service = AnthropicServiceFactory.service(apiKey: anthropicApiKey)
-            DispatchQueue.main.async {
-                Task {
-                    self.isWriting = true
-                    textView.isEditable = false
-                    textView.isSelectable = false
-                    textView.setTextColor(UIColor.secondaryLabel)
+            let anthropicApiKey = settings.anthropicKey
+            let betaHeaders = ["prompt-caching-2024-07-31"]
+            let service = AnthropicServiceFactory.service(apiKey: anthropicApiKey, betaHeaders: betaHeaders)
+            
 
-                    defer {
-                        self.isWriting = false
-                        textView.isEditable = true
-                        textView.isSelectable = true
-                        textView.setTextColor(UIColor.label)
+            Task { @MainActor in
+                self.isWriting = true
+                textView.isEditable = false
+                textView.isSelectable = false
+                textView.setTextColor(UIColor.secondaryLabel)
+                
+                defer {
+                    self.isWriting = false
+                    textView.isEditable = true
+                    textView.isSelectable = true
+                    textView.setTextColor(UIColor.label)
+                }
+                
+                let stream = try await service.streamMessage(parameters)
+                for try await result in stream {
+                    if let content = result.delta?.text {
+                        textView.insertText(content)
                     }
-
-                    let stream = try await service.streamMessage(parameters)
-                    for try await result in stream {
-                        let content = result.delta?.text ?? ""
-                        DispatchQueue.main.async {
-                            textView.insertText(content)
-                        }
+                    let t = result.type
+                    
+                    if let createdCacheTokens = result.message?.usage.cacheCreationInputTokens {
+                        print("type: \(t) createdCacheTokens \(createdCacheTokens)")
+                    }
+                    if let readCacheTokens = result.message?.usage.cacheReadInputTokens {
+                        print("type: \(t) readCacheTokens \(readCacheTokens)")
+                    }
+                    if let inputT = result.message?.usage.inputTokens {
+                        print("type: \(t) inputTokens \(inputT)")
+                    }
+                    if let outputT = result.usage?.outputTokens {
+                        print("type: \(t) outputTokens \(outputT)")
                     }
 
                 }
@@ -109,30 +132,28 @@ extension DocumentView {
             chatGPT.model = settings.model
             chatGPT.temperature = Float(settings.temperature)
 
-            DispatchQueue.main.async {
-                Task {
-                    self.isWriting = true
-                    textView.isEditable = false
-                    textView.isSelectable = false
-                    textView.setTextColor(UIColor.secondaryLabel)
-                    
-                    defer {
-                        self.isWriting = false
-                        textView.isEditable = true
-                        textView.isSelectable = true
-                        textView.setTextColor(UIColor.label)
-                    }
-                    
-                    switch await chatGPT.streamChatText(queries: messages) {
-                    case .failure(let error):
-                        self.textView?.insertText("\nCommunication Error:\n\(error.description)")
-                        return
-                    case .success(let results):
-                        for try await result in results {
-                            if let result {
-                                DispatchQueue.main.async {
-                                    textView.insertText(result)
-                                }
+            Task { @MainActor in
+                self.isWriting = true
+                textView.isEditable = false
+                textView.isSelectable = false
+                textView.setTextColor(UIColor.secondaryLabel)
+                
+                defer {
+                    self.isWriting = false
+                    textView.isEditable = true
+                    textView.isSelectable = true
+                    textView.setTextColor(UIColor.label)
+                }
+                
+                switch await chatGPT.streamChatText(queries: messages) {
+                case .failure(let error):
+                    self.textView?.insertText("\nCommunication Error:\n\(error.description)")
+                    return
+                case .success(let results):
+                    for try await result in results {
+                        if let result {
+                            DispatchQueue.main.async {
+                                textView.insertText(result)
                             }
                         }
                     }
