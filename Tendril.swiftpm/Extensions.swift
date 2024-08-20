@@ -70,6 +70,7 @@ extension NSAttributedString {
         let fullRange = NSRange(location: 0, length: (string as NSString).length)
         mutableString.addAttribute(.font, value: UIFont.systemFont(ofSize: 18), range: fullRange)
         mutableString.addAttribute(.foregroundColor, value: UIColor.label, range: fullRange)
+        mutableString.addAttribute(NSAttributedString.Key(rawValue: "author"), value: "gray", range: fullRange)
         for range in greyRanges {
             if range.location + range.length <= string.count {
                 mutableString.addAttribute(.foregroundColor, value: UIColor.secondaryLabel, range: range)

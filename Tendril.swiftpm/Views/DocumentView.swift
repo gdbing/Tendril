@@ -2,13 +2,25 @@ import SwiftUI
 
 struct DocumentView: View {
     @StateObject var controller = DocumentController()
+    @State private var showAlert = false
     @Binding var document: Document?
-    
+    @EnvironmentObject private var settings: Settings
+
     var body: some View {
         ZStack(alignment: .topTrailing) {
             UIKitDocumentView(controller: controller, 
                               document: $document)
                 .toolbar {
+                    ToolbarItem  {
+                        Button(action: {
+                            showAlert.toggle()
+                        }, label: {
+                            Image(systemName: "figure.wave")
+                        })
+                        .alert(isPresented: $showAlert) {
+                            Alert(title: Text("system message"), message: Text(settings.systemMessage), dismissButton: .default(Text("OK")))
+                        }
+                    }
                     ToolbarItem(placement: .primaryAction) {
                         Button(action: {
                             controller.gptIfy()
@@ -20,8 +32,12 @@ struct DocumentView: View {
                     }
                 }
             if let wordCount = controller.wordCount {
-                Text("\(wordCount) words ")
-                    .monospacedDigit()
+                Button(action: {
+                    controller.updateWordCount(isEaten: true)
+                }, label: {
+                    Text("\(wordCount) words ")
+                        .monospacedDigit()
+                })
             }
         }
     }
@@ -100,6 +116,7 @@ extension DocumentView {
             init(_ parent: UIKitDocumentView) {
                 self.parent = parent
             }
+            
             
             func textViewDidChange(_ textView: UITextView) {
                 self.parent.document?.write(text: textView.text)
