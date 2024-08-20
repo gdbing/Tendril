@@ -16,13 +16,32 @@ extension DocumentView {
             switch Settings().model {
             case "claude-3-opus-20240229", "claude-3-5-sonnet-20240620", "claude-3-haiku-20240307":
                 streamAnthropic()
-            case "gpt-3.5-turbo", "gpt-4o", "gpt-4o-mini":
+            case "gpt-3.5-turbo", "gpt-4o", "gpt-4o-mini", "gpt-4o-2024-08-06", "gpt-4o-2024-05-13":
                 streamChatGPT()
             default:
                 print("invalid model selected")
             }
         }
 
+        func merge(messages: [(role: String, content: String)]) -> [(role: String, content: String)]? {
+            var mergedMessages = [(role: String, content: String)]()
+            guard let firstMessage = messages.first else { return nil }
+            
+            var currentRole = firstMessage.role
+            var currentContent = firstMessage.content
+            for message in messages.dropFirst() {
+                if message.role == currentRole {
+                    currentContent += "\n\n" + message.content
+                } else {
+                    mergedMessages.append((role: currentRole, content: currentContent))
+                    currentRole = message.role
+                    currentContent = message.content
+                }
+            }
+            mergedMessages.append((role: currentRole, content: currentContent))
+            
+            return mergedMessages
+        }
 
         func streamAnthropic() {
             guard !self.isWriting, let textView else { return }
@@ -45,6 +64,7 @@ extension DocumentView {
 
             var anthropicMessages = mergedQueries.map {
                 let role: MessageParameter.Message.Role = $0.role == "user" ? .user : .assistant
+
                 if $0.content.hasSuffix("\n^CACHE") {
                     let content = String($0.content.dropLast("\n^CACHE".count))
                     print("cached ...\(content.suffix(40))")
@@ -106,7 +126,6 @@ extension DocumentView {
                     if let outputT = result.usage?.outputTokens {
                         print("type: \(t) outputTokens \(outputT)")
                     }
-
                 }
             }
         }
@@ -246,27 +265,7 @@ extension DocumentView {
             append(accumulation)
             return messages.filter { $0.content != "" }
         }
-        
-        func merge(messages: [(role: String, content: String)]) -> [(role: String, content: String)]? {
-            var mergedMessages = [(role: String, content: String)]()
-            guard let firstMessage = messages.first else { return nil }
-            
-            var currentRole = firstMessage.role
-            var currentContent = firstMessage.content
-            for message in messages.dropFirst() {
-                if message.role == currentRole {
-                    currentContent += "\n\n" + message.content
-                } else {
-                    mergedMessages.append((role: currentRole, content: currentContent))
-                    currentRole = message.role
-                    currentContent = message.content
-                }
-            }
-            mergedMessages.append((role: currentRole, content: currentContent))
-            
-            return mergedMessages
-        }
-        
+                
         func updateWordCount(isEaten: Bool = false) {
             var words: [String]? = nil
 
