@@ -36,15 +36,15 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/gdbing/SwiftChatGPT", "1.1.0"..<"2.0.0"),
-        .package(url: "https://github.com/jamesrochabrun/SwiftAnthropic", "1.4.0"..<"2.0.0")
+        .package(url: "https://github.com/jamesrochabrun/SwiftAnthropic", "1.4.0"..<"2.0.0"),
+        .package(url: "https://github.com/jamesrochabrun/SwiftOpenAI", "2.0.0"..<"3.0.0")
     ],
     targets: [
         .executableTarget(
             name: "AppModule",
             dependencies: [
-                .product(name: "SwiftChatGPT", package: "SwiftChatGPT"),
-                .product(name: "SwiftAnthropic", package: "swiftanthropic")
+                .product(name: "SwiftAnthropic", package: "swiftanthropic"),
+                .product(name: "SwiftOpenAI", package: "swiftopenai")
             ],
             path: ".",
             swiftSettings: [

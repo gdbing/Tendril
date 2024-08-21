@@ -10,12 +10,12 @@
       }
     },
     {
-      "identity" : "swiftchatgpt",
+      "identity" : "swiftopenai",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gdbing/SwiftChatGPT",
+      "location" : "https://github.com/jamesrochabrun/SwiftOpenAI",
       "state" : {
-        "revision" : "d29571b88bbad8d3e536eeffea23d2b13c1f1eba",
-        "version" : "1.1.1"
+        "revision" : "3be54cb482090a1ff0a826e811f3be3c9ca56344",
+        "version" : "2.9.0"
       }
     }
   ],

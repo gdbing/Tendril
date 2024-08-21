@@ -1,8 +1,55 @@
-//
-//  File.swift
-//  
-//
-//  Created by Graham Bing on 2024-08-20.
-//
+import SwiftUI
+import SwiftOpenAI
 
-import Foundation
+fileprivate let betweenVs = try! NSRegularExpression(pattern: "^vvv[\\s\\S]*?\\R\\^\\^\\^$\\R?", options: [.anchorsMatchLines])
+fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^\\^\\^\\R?", options: [])
+
+extension DocumentController {
+
+    func streamChatGPT() {
+        guard !self.isWriting, let textView else { return }
+        guard let text = textView.precedingText() else { return } // get text before selection
+        guard let neededWords = self.omitNeedlessWords(text) else { return } // remove commented out text
+        guard let queries = self.massage(text: neededWords) else { return } // convert text into messages
+
+        let settings = Settings()
+        let messages = [(role: "system", content: settings.systemMessage)] + queries
+
+//            for message in messages {
+//                print("""
+//                         role: \(message.role)
+//                      content: \(message.content)
+//
+//                      """)
+//            }
+
+        let service = OpenAIServiceFactory.service(apiKey: settings.apiKey)
+
+//            chatGPT.model = settings.model
+//            chatGPT.temperature = Float(settings.temperature)
+//
+        Task { @MainActor in
+            self.isWriting = true
+            textView.isEditable = false
+            textView.isSelectable = false
+            textView.setTextColor(UIColor.secondaryLabel)
+
+            defer {
+                self.isWriting = false
+                textView.isEditable = true
+                textView.isSelectable = true
+                textView.setTextColor(UIColor.label)
+            }
+
+            let prompt = "Tell me a joke"
+            let parameters = ChatCompletionParameters(messages: [.init(role: .user, content: .text(prompt))], model: .gpt4o, temperature: settings.temperature)
+            let stream = try await service.startStreamedChat(parameters: parameters)
+            for try await result in stream {
+                if let content = result.choices.first?.delta.content {
+                    textView.insertText(content)
+                }
+            }
+
+        }
+    }
+}
