@@ -21,17 +21,6 @@ struct SettingsView: View {
                     }
                 }
                 Picker(selection: $settings.model, label: Text("Model")) {
-                    // gpt-3.5-turbo-0301 and gpt-4-0314 will be deprecated and discontinued on Sept13,2023 
-//                    Text("gpt-3.5-turbo").tag("gpt-3.5-turbo")
-//                    Text("gpt-3.5-turbo-16k").tag("gpt-3.5-turbo-16k")
-//                    Text("gpt-3.5-turbo-0301").tag("gpt-3.5-turbo-0301")
-//                    Text("gpt-3.5-turbo-0613").tag("gpt-3.5-turbo-0613")
-//                    Text("gpt-4").tag("gpt-4")
-//                    Text("gpt-4-32k").tag("gpt-4-32k")
-//                    Text("gpt-4-0314").tag("gpt-4-0314")
-//                    Text("gpt-4-0613").tag("gpt-4-0613")
-//                    Text("gpt-4-turbo").tag("gpt-4-turbo")
-//                    Text("gpt-4-1106-preview").tag("gpt-4-1106-preview")
                     Text("gpt-4o").tag("gpt-4o")
                     Text("gpt-4o-2024-05-13").tag("gpt-4o-2024-05-13")
                     Text("gpt-4o-2024-08-06").tag("gpt-4o-2024-08-06")
