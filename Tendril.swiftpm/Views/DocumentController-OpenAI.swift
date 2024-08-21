@@ -22,6 +22,9 @@ extension DocumentController {
 //
 //                      """)
 //            }
+        let openAiMessages = messages.map { chatMessage in
+            ChatCompletionParameters.Message.init(role: ChatCompletionParameters.Message.Role(rawValue: chatMessage.role) ?? .user, content: .text(chatMessage.content))
+        }
 
         let service = OpenAIServiceFactory.service(apiKey: settings.apiKey)
 
@@ -41,8 +44,7 @@ extension DocumentController {
                 textView.setTextColor(UIColor.label)
             }
 
-            let prompt = "Tell me a joke"
-            let parameters = ChatCompletionParameters(messages: [.init(role: .user, content: .text(prompt))], model: .gpt4o, temperature: settings.temperature)
+            let parameters = ChatCompletionParameters(messages: openAiMessages, model: .gpt4o, temperature: settings.temperature)
             let stream = try await service.startStreamedChat(parameters: parameters)
             for try await result in stream {
                 if let content = result.choices.first?.delta.content {
