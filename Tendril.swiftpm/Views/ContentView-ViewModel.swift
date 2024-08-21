@@ -29,9 +29,6 @@ extension ContentView {
             
             self.documents = project.readDocuments()
             self.archivedDocuments = project.readArchivedDocuments()
-            
-            self.tags = project.readTags()
-            // TODO: self.tags needs to be updated as tags are added or removed from documents
         }
         
         func newDocument(name: String = "Untitled", suffix: String = "txt") -> Document? {

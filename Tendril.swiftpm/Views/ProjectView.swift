@@ -8,12 +8,6 @@ extension ContentView {
         @State var selectedTag: Document?
         
         var filteredDocuments: [Document] {
-            if let tag = self.selectedTag {
-                return viewModel.documents.filter {
-                    let tagNames = $0.readTags()
-                    return tagNames.contains(tag.name)
-                }
-            }
             return viewModel.documents
                 .sorted(by: {
                     $0.name.lowercased() < $1.name.lowercased()

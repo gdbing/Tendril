@@ -35,21 +35,7 @@ struct Document {
     func write(greyRanges: [NSRange]) {
         self.project.writeGreyRanges(greyRanges, document: self)
     }
-    
-    // Tags
-    
-    func readTags() -> [String] {
-        return self.project.readTagsFor(document: self)
-    }
-    
-    func addTag(tag: String) {
-        self.project.addTag(tag, document: self)
-    }
-    
-    func removeTag(tag: String) {
-        self.project.removeTag(tag, document: self)
-    }
-    
+        
     func renamed(name: String) -> Document {
         if let newURL = url.renameFile(name: name) {
             return Document(project: self.project, url: newURL)
