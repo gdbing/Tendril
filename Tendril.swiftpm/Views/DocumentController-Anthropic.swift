@@ -1,6 +1,6 @@
 import SwiftUI
 import SwiftAnthropic
-import SwiftChatGPT
+import SwiftOpenAI
 
 fileprivate let betweenVs = try! NSRegularExpression(pattern: "^vvv[\\s\\S]*?\\R\\^\\^\\^$\\R?", options: [.anchorsMatchLines])
 fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^\\^\\^\\R?", options: [])
@@ -53,7 +53,7 @@ extension DocumentView {
             
             let settings = Settings()
 
-            guard let model: Model = {
+            guard let model: SwiftAnthropic.Model = {
                 switch settings.model {
                 case "claude-3-opus-20240229": return .claude3Opus
                 case "claude-3-5-sonnet-20240620": return .claude35Sonnet
@@ -171,9 +171,7 @@ extension DocumentView {
                 case .success(let results):
                     for try await result in results {
                         if let result {
-                            DispatchQueue.main.async {
-                                textView.insertText(result)
-                            }
+                            textView.insertText(result)
                         }
                     }
                 }
@@ -267,9 +265,9 @@ extension DocumentView {
         }
                 
         func updateWordCount(isEaten: Bool = false) {
-            var words: [String]? = nil
+            Task { @MainActor in
+                var words: [String]? = nil
 
-            DispatchQueue.main.async {
                 if let range = self.textView?.selectedTextRange,
                    let text = self.textView?.text(in: range),
                    !text.isEmpty {

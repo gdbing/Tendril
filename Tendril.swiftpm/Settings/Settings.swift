@@ -40,7 +40,19 @@ class Settings: ObservableObject {
     }
     
     @AppStorage("model")
-    var model: String = "gpt-3.5-turbo" {
+    var model: String = "gpt-4o" {
+        willSet(newModel) {
+            if model != newModel && prevModel != newModel {
+                prevModel = model
+            }
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+    }
+
+    @AppStorage("prevModel")
+    var prevModel: String = "gpt-4o" {
         willSet {
             DispatchQueue.main.async {
                 self.objectWillChange.send()

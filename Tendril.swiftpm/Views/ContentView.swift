@@ -88,23 +88,24 @@ struct ContentView: View {
                         self.showingSettings = true
                     }, label: {
                         HStack {
-                            Text(settings.model)
-
                             Image(systemName: "gear")
                         }
                     })
                     .keyboardShortcut(",", modifiers: [.command])
                 }
-//                if self.selectedDocument != nil {
-//                    ToolbarItem(placement: .automatic) {
-//                        Button(action: {
-//                            self.showingTags = true
-//                        }, label: {
-//                            Image(systemName: "tag")
-//                        })
-//                        .keyboardShortcut("t", modifiers: [.command])
-//                    }
-//                }
+                ToolbarItem(placement: .automatic) {
+                    Button(action: {
+                        let model = settings.model
+                        settings.model = settings.prevModel
+                        settings.prevModel = model
+                    }, label: {
+                        HStack {
+                            Image(systemName: "arrow.swap")
+                            Text(settings.model)
+                        }
+                    })
+                    .keyboardShortcut(",", modifiers: [.command])
+                }
            }
         }
         .fileImporter(
