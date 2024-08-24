@@ -66,7 +66,7 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
 
                 if $0.content.hasSuffix("\n^CACHE") {
                     let content = String($0.content.dropLast("\n^CACHE".count))
-                    print("cached ...\(content.suffix(40))")
+//                    print("cached ...\(content.suffix(40))")
                     let cache = MessageParameter.Message.Content.ContentObject.cache(.init(type: .text, text: content, cacheControl: .init(type: .ephemeral)))
                     return MessageParameter.Message(role: role, content: .list([cache]))
                 }
@@ -111,19 +111,28 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
                     if let content = result.delta?.text {
                         textView.insertText(content)
                     }
-                    let t = result.type
+                    
+                    var shouldPrint = false
+                    var msg = "type: \(result.type)"
                     
                     if let createdCacheTokens = result.message?.usage.cacheCreationInputTokens {
-                        print("type: \(t) createdCacheTokens \(createdCacheTokens)")
+                        msg += ", cache write: \(createdCacheTokens)"
+                        shouldPrint = true
                     }
                     if let readCacheTokens = result.message?.usage.cacheReadInputTokens {
-                        print("type: \(t) readCacheTokens \(readCacheTokens)")
+                        msg += ", cache read: \(readCacheTokens)"
+                        shouldPrint = true
                     }
                     if let inputT = result.message?.usage.inputTokens {
-                        print("type: \(t) inputTokens \(inputT)")
+                        msg += ", input: \(inputT)"
+                        shouldPrint = true
                     }
                     if let outputT = result.usage?.outputTokens {
-                        print("type: \(t) outputTokens \(outputT)")
+                        msg += ", output: \(outputT)"
+                        shouldPrint = true
+                    }
+                    if shouldPrint {
+                        print(msg)
                     }
                 }
             }
