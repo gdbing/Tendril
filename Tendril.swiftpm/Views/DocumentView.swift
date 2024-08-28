@@ -32,12 +32,18 @@ struct DocumentView: View {
                     }
                 }
             if let wordCount = controller.wordCount {
-                Button(action: {
-                    controller.updateWordCount(isEaten: true)
-                }, label: {
-                    Text("\(wordCount) words ")
-                        .monospacedDigit()
-                })
+                VStack(alignment: .trailing) {
+                    Button(action: {
+                        controller.updateWordCount(isEaten: true)
+                    }, label: {
+                        Text("\(wordCount) words ")
+                            .monospacedDigit()
+                    })
+                    if let time = controller.time {
+                        Text(time)
+                            .monospacedDigit()
+                    }
+                }
             }
         }
     }

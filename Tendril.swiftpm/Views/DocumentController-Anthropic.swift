@@ -8,6 +8,25 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
     class DocumentController: ObservableObject {
         @Published var isWriting = false
         @Published var wordCount: Int?
+        @Published var time: String?
+     
+        private var timer: Timer?
+        private func startTimer() {
+            let endTime = Date().addingTimeInterval(300)
+            timer?.invalidate()
+            self.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+                let timeRemaining = endTime.timeIntervalSinceNow
+                
+                if timeRemaining <= 0 {
+                    self.time = nil
+                    timer.invalidate()
+                }
+                
+                let minutes = Int(timeRemaining) / 60
+                let seconds = Int(timeRemaining) % 60
+                self.time = String(format: "%d:%02d", minutes, seconds)
+            }
+        }
         
         var textView: UITextView?
 
@@ -68,6 +87,7 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
                     let content = String($0.content.dropLast("\n^CACHE".count))
 //                    print("cached ...\(content.suffix(40))")
                     let cache = MessageParameter.Message.Content.ContentObject.cache(.init(type: .text, text: content, cacheControl: .init(type: .ephemeral)))
+                    self.startTimer()
                     return MessageParameter.Message(role: role, content: .list([cache]))
                 }
                 
