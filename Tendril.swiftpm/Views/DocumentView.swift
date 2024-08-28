@@ -55,14 +55,21 @@ extension DocumentView {
         
         @State private var textView = UITextView()
         @Binding var document: Document?
-                
+
+        @ScaledMetric(relativeTo: .body) var maxWidth = 680
+
         init(controller: DocumentController, document: Binding<Document?>) {
             self.controller = controller
             _document = document
+
+            let textContentStorage = NSTextContentStorage()
+            let textLayoutManager = NSTextLayoutManager()
+            textContentStorage.addTextLayoutManager(textLayoutManager)
+            let textContainer = NSTextContainer()
+            textLayoutManager.textContainer = textContainer
+            self.textView = UITextView(frame: CGRect(x: 0, y: 20, width: 300, height: 0), textContainer: textContainer)
         }
-        
-        @ScaledMetric(relativeTo: .body) var maxWidth = 680    
-        
+
         func makeUIView(context: Context) -> UITextView {
             self.controller.textView = textView
             if let document {
@@ -78,7 +85,12 @@ extension DocumentView {
             textView.scrollsToTop = true
             textView.backgroundColor = UIColor.systemBackground
             textView.font = UIFont.systemFont(ofSize: 18)
-            
+
+            let layoutManager = textView.textContainer.textLayoutManager
+            layoutManager?.delegate = context.coordinator
+            let textStorage = layoutManager?.textContentManager as? NSTextContentStorage
+            textStorage?.delegate = context.coordinator
+
             return textView
         }
         
@@ -138,8 +150,39 @@ extension DocumentView {
                 return true
             }        
         }
+
     }
 }
+
+extension DocumentView.UIKitDocumentView.Coordinator : NSTextLayoutManagerDelegate {
+    func textLayoutManager(_ textLayoutManager: NSTextLayoutManager,
+                           textLayoutFragmentFor location: NSTextLocation,
+                           in textElement: NSTextElement) -> NSTextLayoutFragment {
+        if let paragraph = textElement as? NSTextParagraph, paragraph.attributedString.string.hasPrefix("user: ") {
+            return BubbleLayoutFragment(textElement: textElement, range: textElement.elementRange)
+        } else {
+            return NSTextLayoutFragment(textElement: textElement, range: textElement.elementRange)
+        }
+    }
+
+}
+
+extension DocumentView.UIKitDocumentView.Coordinator : NSTextContentStorageDelegate {
+    func textContentStorage(_ textContentStorage: NSTextContentStorage, textParagraphWith range: NSRange) -> NSTextParagraph? {
+//        let originalText = textContentStorage.textStorage!.attributedSubstring(from: range)
+//        if originalText.string.hasPrefix("user: ") {
+//            let displayAttributes: [NSAttributedString.Key: AnyObject] = [ .foregroundColor: UIColor.white ]
+//            let textWithDisplayAttributes = NSMutableAttributedString(attributedString: originalText)
+//            let rangeForDisplayAttributes = NSRange(location: 0, length: textWithDisplayAttributes.length)
+//            textWithDisplayAttributes.addAttributes(displayAttributes, range: rangeForDisplayAttributes)
+//
+//            // Create our new paragraph with our display attributes.
+//            return NSTextParagraph(attributedString: textWithDisplayAttributes)
+//        }
+        return nil
+    }
+}
+
 extension UITextView {
     func setTextColor(_ color: UIColor) {
         var attributes = self.typingAttributes
