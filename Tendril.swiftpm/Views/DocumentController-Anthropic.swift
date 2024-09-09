@@ -10,6 +10,8 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
         @Published var wordCount: Int?
         @Published var time: String?
      
+        public var rope: TendrilRope?
+        
         private var timer: Timer?
         private func startTimer() {
             let endTime = Date().addingTimeInterval(300)

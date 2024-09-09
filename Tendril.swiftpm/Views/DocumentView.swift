@@ -75,6 +75,7 @@ extension DocumentView {
             if let document {
                 textView.becomeFirstResponder()
                 textView.text = document.readText()
+                controller.rope = TendrilRope(content: textView.text)
                 controller.updateWordCount()
             }
             textView.delegate = context.coordinator
@@ -100,6 +101,7 @@ extension DocumentView {
                 let text = document.readText()
                 let greys = document.readGreyRanges()
                 if text != uiView.text {
+                    controller.rope = TendrilRope(content: textView.text)
                     let attrText = NSMutableAttributedString(text, greyRanges: greys)
                     uiView.attributedText = attrText
                     controller.updateWordCount()

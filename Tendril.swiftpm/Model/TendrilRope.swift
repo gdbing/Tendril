@@ -7,7 +7,7 @@
 
 import Foundation
 
-class ParagraphRope {
+class TendrilRope {
     class Node {
         var content: String?
         var weight: Int = 0
@@ -26,7 +26,7 @@ class ParagraphRope {
         init() { }
         init(_ content: String) {
             self.content = content
-            self.weight = content.count
+            self.weight = content.nsLength
         }
 
         func nodeAt(offset:Int) -> Node? {
@@ -44,13 +44,13 @@ class ParagraphRope {
         func insert(content: String, at offset: Int, hasTrailingNewline: Bool) {
             if offset == weight, self.right == nil, ((self.content?.last?.isNewline) != true)
             {
-                self.weight += content.count
+                self.weight += content.nsLength
                 self.content! += content
             }
             else if offset == 0
             {
                 if let left {
-                    weight += content.count
+                    weight += content.nsLength
                     left.insert(content: content, at: 0, hasTrailingNewline: hasTrailingNewline)
                 } else {
                     if hasTrailingNewline {
@@ -64,25 +64,25 @@ class ParagraphRope {
                         self.next?.prev = self.right
 
                         self.left!.content = content
-                        self.left!.weight = content.count
+                        self.left!.weight = content.nsLength
                         self.left!.next = self.right
                         self.left!.prev = self.prev
                         self.prev?.next = self.left
 
                         self.content = nil
-                        self.weight = content.count
+                        self.weight = content.nsLength
                         self.next = nil
                         self.prev = nil
                     } else {
                         self.content = content + self.content!
-                        self.weight = content.count + self.weight
+                        self.weight = content.nsLength + self.weight
                     }
                 }
             }
             else if offset < weight
             {
                 if let left {
-                    self.weight += content.count
+                    self.weight += content.nsLength
                     left.insert(content: content, at: offset, hasTrailingNewline: hasTrailingNewline)
                 } else {
                     let offsetIndex = self.content!.index(self.content!.startIndex, offsetBy: offset)
@@ -90,10 +90,10 @@ class ParagraphRope {
                         let subString1 = self.content!.prefix(upTo: offsetIndex)
                         let subString2 = self.content!.suffix(from: offsetIndex)
                         self.content = subString1 + content
-                        self.weight = self.content!.count
+                        self.weight = self.content!.nsLength
                         self.insert(content: String(subString2), at: self.weight, hasTrailingNewline: true)
                     } else {
-                        self.weight += content.count
+                        self.weight += content.nsLength
                         self.content!.insert(contentsOf: content, at: offsetIndex)
                     }
                 }
@@ -113,7 +113,7 @@ class ParagraphRope {
                     self.left!.next = self.right
 
                     self.right!.content = content
-                    self.right!.weight = content.count
+                    self.right!.weight = content.nsLength
                     self.right!.prev = self.left
                     self.right!.next = self.next
                     self.next?.prev = self.right
@@ -143,24 +143,25 @@ class ParagraphRope {
             guard length > 0 else { return self }
 
             if let content = self.content {
-                let prefix = content.prefix(location)
-                let suffixLength = max(self.weight - (location + length), 0) // accept overflowing lengths so we dont have to trim them to fit weight
-                let suffix = content.suffix(suffixLength)
+                let prefixIndex = content.charIndex(byteIndex: location)
+                let prefix = content.prefix(upTo: prefixIndex ?? content.startIndex)
+                let suffixIndex = content.charIndex(byteIndex: location + length)
+                let suffix = content.suffix(from: suffixIndex ?? content.endIndex)
                 if !suffix.isEmpty {
                     self.content = String(prefix + suffix)
-                    self.weight = self.content!.count
+                    self.weight = self.content!.nsLength
                     return self
                 } else if !prefix.isEmpty {
                     if let next = self.next {
                         next.content = prefix + next.content!
-                        next.bubbleUp(prefix.count)
+                        next.bubbleUp(location)
                         next.prev = self.prev
                         self.prev?.next = next
                         return nil
                     } else {
                         // only terminal node may end without newline
                         self.content = String(prefix)
-                        self.weight = prefix.count
+                        self.weight = location
                         return self
                     }
                 } else {
@@ -294,7 +295,7 @@ class ParagraphRope {
 
             if paragraphs.count == 2 {
                 let node = Node()
-                node.weight = paragraphs.first!.count + 1
+                node.weight = paragraphs.first!.nsLength + 1
                 node.left = Node(paragraphs.first! + "\n")
                 let secondIndex = paragraphs.index(after: paragraphs.startIndex)
                 node.right = Node(paragraphs[secondIndex] + "\n")
@@ -375,7 +376,7 @@ class ParagraphRope {
         var relativeOffset = offset
         for paragraph in components.dropLast() {
             root.insert(content: paragraph + "\n", at: relativeOffset, hasTrailingNewline: true)
-            relativeOffset += paragraph.count + 1
+            relativeOffset += paragraph.nsLength + 1
         }
         if lastParagraph != "" {
 //        if !(content.last?.isNewline ?? false) {
