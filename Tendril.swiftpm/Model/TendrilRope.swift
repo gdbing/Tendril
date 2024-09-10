@@ -242,7 +242,9 @@ class TendrilRope {
             }
             var output = ""
             while node != nil {
+                output += "Node( "
                 output += node!.content!
+                output += " ),"
                 node = (node!.next as? Node)
             }
             return output

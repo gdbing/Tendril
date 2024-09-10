@@ -119,15 +119,17 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
                 self.isWriting = true
                 textView.isEditable = false
                 textView.isSelectable = false
-                textView.setTextColor(UIColor.secondaryLabel)
-                
+                textView.setTextColor(UIColor.aiTextGray)
+//                textView.setAuthor("gray")
+
                 defer {
                     self.isWriting = false
                     textView.isEditable = true
                     textView.isSelectable = true
                     textView.setTextColor(UIColor.label)
+//                    textView.setAuthor(nil)
                 }
-                
+
                 let stream = try await service.streamMessage(parameters)
                 for try await result in stream {
                     if let content = result.delta?.text {

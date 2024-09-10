@@ -64,16 +64,28 @@ extension URL {
     }
 }
 
-extension NSAttributedString {    
+extension UIColor {
+    class var aiTextGray: UIColor { .secondaryLabel }
+    class var commentGray: UIColor { .tertiaryLabel }
+    class var userBubble: UIColor { .systemTeal.withAlphaComponent(0.25) }
+    class var systemBubble: UIColor { .systemGreen.withAlphaComponent(0.25) }
+    class var cacheBubble: UIColor { .systemPurple.withAlphaComponent(0.45) }
+}
+
+extension NSAttributedString.Key {
+    public static let author: NSAttributedString.Key = NSAttributedString.Key(rawValue: "author")
+}
+
+extension NSAttributedString {
     convenience init(_ string: String, greyRanges: [NSRange]) {
         let mutableString = NSMutableAttributedString(string: string)
         let fullRange = NSRange(location: 0, length: (string as NSString).length)
         mutableString.addAttribute(.font, value: UIFont.systemFont(ofSize: 18), range: fullRange)
         mutableString.addAttribute(.foregroundColor, value: UIColor.label, range: fullRange)
-        mutableString.addAttribute(NSAttributedString.Key(rawValue: "author"), value: "gray", range: fullRange)
         for range in greyRanges {
             if range.location + range.length <= string.count {
-                mutableString.addAttribute(.foregroundColor, value: UIColor.secondaryLabel, range: range)
+                mutableString.addAttribute(.foregroundColor, value: UIColor.aiTextGray, range: range)
+//                mutableString.addAttribute(.author, value: "gray", range: range)
             }
         } 
         self.init(attributedString: mutableString)
@@ -82,10 +94,12 @@ extension NSAttributedString {
     var greyRanges: [NSRange] {
         get {
             var ranges = [NSRange]()
-            self.enumerateAttribute(.foregroundColor, 
+//            self.enumerateAttribute(.author,
+            self.enumerateAttribute(.foregroundColor,
                                     in: NSRange(location: 0, length: self.length), 
                                     options: [], 
                                     using: { value,range,_ in
+//                if "gray" == value as? String {
                 if UIColor.secondaryLabel == value as? NSObject {
                     ranges.append(range)
                 }

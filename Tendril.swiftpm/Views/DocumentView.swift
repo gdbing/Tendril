@@ -73,10 +73,11 @@ extension DocumentView {
         func makeUIView(context: Context) -> UITextView {
             self.controller.textView = textView
             if let document {
-                textView.becomeFirstResponder()
-                textView.text = document.readText()
-                controller.rope = TendrilRope(content: textView.text)
+                let text = document.readText()
+                textView.text = text
+                controller.rope = TendrilRope(content: text)
                 controller.updateWordCount()
+                textView.becomeFirstResponder()
             }
             textView.delegate = context.coordinator
             textView.isScrollEnabled = true
@@ -91,6 +92,7 @@ extension DocumentView {
             layoutManager?.delegate = context.coordinator
             let textStorage = layoutManager?.textContentManager as? NSTextContentStorage
             textStorage?.delegate = context.coordinator
+            textView.textStorage.delegate = context.coordinator
 
             return textView
         }
@@ -101,7 +103,7 @@ extension DocumentView {
                 let text = document.readText()
                 let greys = document.readGreyRanges()
                 if text != uiView.text {
-                    controller.rope = TendrilRope(content: textView.text)
+                    controller.rope = TendrilRope(content: text)
                     let attrText = NSMutableAttributedString(text, greyRanges: greys)
                     uiView.attributedText = attrText
                     controller.updateWordCount()
@@ -111,6 +113,7 @@ extension DocumentView {
                 }
             } else {
                 uiView.text = ""
+                controller.rope = nil
                 uiView.isEditable = false
             }
         }
@@ -149,6 +152,16 @@ extension DocumentView {
             
             func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
                 textView.setTextColor(.label)
+//                textView.setAuthor(nil)
+//                print("rope before: \(self.parent.controller.rope?.toString() ?? "")")
+//                if range.length > 0 {
+//                    self.parent.controller.rope?.delete(range: range)
+//                }
+//                if !text.isEmpty {
+//                    self.parent.controller.rope?.insert(content: text, at: range.location)
+//                }
+                print("inserted \"\(text)\" at \(range.location),\(range.length)")
+//                print("rope after: \(self.parent.controller.rope?.toString() ?? "")")
                 return true
             }        
         }
@@ -160,30 +173,77 @@ extension DocumentView.UIKitDocumentView.Coordinator : NSTextLayoutManagerDelega
     func textLayoutManager(_ textLayoutManager: NSTextLayoutManager,
                            textLayoutFragmentFor location: NSTextLocation,
                            in textElement: NSTextElement) -> NSTextLayoutFragment {
-        if let paragraph = textElement as? NSTextParagraph, paragraph.attributedString.string.hasPrefix("user: ") {
-            return BubbleLayoutFragment(textElement: textElement, range: textElement.elementRange)
-        } else {
-            return NSTextLayoutFragment(textElement: textElement, range: textElement.elementRange)
+        let offset = textElement.textContentManager!.offset(from: textLayoutManager.documentRange.location, to: location)
+        if let node = self.parent.controller.rope?.nodeAt(location: offset) {
+            if node.isComment {
+                return NSTextLayoutFragment(textElement: textElement, range: textElement.elementRange)
+            }
+            if node.type == .user {
+                return BubbleLayoutFragment(textElement: textElement, range: textElement.elementRange)
+            }
+            if node.type == .system {
+                return BubbleLayoutFragment(textElement: textElement, range: textElement.elementRange, bubbleColor: .systemBubble)
+            }
+            if node.type == .cache {
+                return BubbleLayoutFragment(textElement: textElement, range: textElement.elementRange, bubbleColor: .cacheBubble)
+            }
+            if node.type == .none && node.blockType == .user {
+                return BubbleLayoutFragment(textElement: textElement, range: textElement.elementRange)
+            }
+            if node.type == .none && node.blockType == .system {
+                return BubbleLayoutFragment(textElement: textElement, range: textElement.elementRange, bubbleColor: .systemBubble)
+            }
         }
-    }
 
+        return NSTextLayoutFragment(textElement: textElement, range: textElement.elementRange)
+    }
 }
 
 extension DocumentView.UIKitDocumentView.Coordinator : NSTextContentStorageDelegate {
     func textContentStorage(_ textContentStorage: NSTextContentStorage, textParagraphWith range: NSRange) -> NSTextParagraph? {
-//        let originalText = textContentStorage.textStorage!.attributedSubstring(from: range)
-//        if originalText.string.hasPrefix("user: ") {
-//            let displayAttributes: [NSAttributedString.Key: AnyObject] = [ .foregroundColor: UIColor.white ]
-//            let textWithDisplayAttributes = NSMutableAttributedString(attributedString: originalText)
-//            let rangeForDisplayAttributes = NSRange(location: 0, length: textWithDisplayAttributes.length)
-//            textWithDisplayAttributes.addAttributes(displayAttributes, range: rangeForDisplayAttributes)
-//
-//            // Create our new paragraph with our display attributes.
-//            return NSTextParagraph(attributedString: textWithDisplayAttributes)
-//        }
+        let originalText = textContentStorage.textStorage!.attributedSubstring(from: range)
+        if let node = self.parent.controller.rope?.nodeAt(location: range.location) {
+            if node.type == .cache || node.type == .user || node.type == .system {
+                return nil
+            }
+            if node.isComment || node.type != .none {
+                let displayAttributes: [NSAttributedString.Key: AnyObject] = [ .foregroundColor: UIColor.secondaryLabel ]
+                let textWithDisplayAttributes = NSMutableAttributedString(attributedString: originalText)
+                let rangeForDisplayAttributes = NSRange(location: 0, length: textWithDisplayAttributes.length)
+                textWithDisplayAttributes.addAttributes(displayAttributes, range: rangeForDisplayAttributes)
+                return NSTextParagraph(attributedString: textWithDisplayAttributes)
+            }
+        }
+
         return nil
     }
 }
+
+extension DocumentView.UIKitDocumentView.Coordinator: NSTextStorageDelegate {
+    
+    func textStorage(_ textStorage: NSTextStorage, didProcessEditing editedMask: NSTextStorage.EditActions, range editedRange: NSRange, changeInLength delta: Int) {
+        if editedMask.contains(.editedCharacters) {
+            if editedRange.length > 0, let range = textStorage.string.range(from: editedRange) {
+                let input = textStorage.string[range]
+                self.parent.controller.rope?.insert(content: String(input), at: editedRange.location)
+            }
+            let deletion = editedRange.length - delta
+            if deletion > 0 {
+                self.parent.controller.rope?.delete(range: NSMakeRange(editedRange.location, deletion))
+            }
+
+            print("didProcessEditing range: \(editedRange.location),\(editedRange.length) delta: \(delta)")
+        }
+    }
+
+//    func textStorage(_ textStorage: NSTextStorage, willProcessEditing editedMask: NSTextStorage.EditActions, range editedRange: NSRange, changeInLength delta: Int) {
+//        if !editedMask.contains(.editedCharacters) {
+//            print("willProcessEditing Attributes only")
+//        }
+//        print("willProcessEditing \(editedMask.rawValue) : \(editedRange.location),\(editedRange.length)")
+//    }
+}
+
 
 extension UITextView {
     func setTextColor(_ color: UIColor) {
@@ -191,7 +251,13 @@ extension UITextView {
         attributes.updateValue(color, forKey: NSAttributedString.Key.foregroundColor)
         self.typingAttributes = attributes
     }
-    
+
+//    func setAuthor(_ author: String?) {
+//        var attributes = self.typingAttributes
+//        attributes.updateValue(author ?? "", forKey: NSAttributedString.Key.author)
+//        self.typingAttributes = attributes
+//    }
+
     func precedingText() -> String? {
         if let selection = self.selectedTextRange,
            let precedingRange = self.textRange(from: self.beginningOfDocument, to: selection.end),

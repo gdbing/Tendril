@@ -30,11 +30,20 @@ class BubbleLayoutFragment: NSTextLayoutFragment {
     }
 
     // Return the bounding rect of the chat bubble, in the space of the first line fragment.
-    private var bubbleRect: CGRect { return tightTextBounds.insetBy(dx: -8, dy: -5) }
+    private var bubbleRect: CGRect { return tightTextBounds.insetBy(dx: -8, dy: -2) }
 
     private var bubbleCornerRadius: CGFloat { return 10 }
 
-    private var bubbleColor: UIColor { return .systemTeal.withAlphaComponent(0.2) }
+    init(textElement: NSTextElement, range rangeInElement: NSTextRange?, bubbleColor: UIColor = .userBubble) {
+        self.bubbleColor = bubbleColor
+        super.init(textElement: textElement, range: rangeInElement)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    private var bubbleColor: UIColor
 
     private func createBubblePath(with ctx: CGContext) -> CGPath {
         let bubbleRect = self.bubbleRect
