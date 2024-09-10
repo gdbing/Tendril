@@ -8,11 +8,9 @@
 import Foundation
 
 class TendrilRope {
-    class Node {
-        var content: String?
+    class Node: LeafNode {
+        /// weight, left, and right are the bare minimum requirements of a rope node
         var weight: Int = 0
-
-        private var parent: Node?
         var left: Node? {
             didSet { left?.parent = self }
         }
@@ -20,13 +18,41 @@ class TendrilRope {
             didSet { right?.parent = self}
         }
 
-        var next: Node?
-        var prev: Node?
+        /// storing content isn't actually required but we might change our minds later, and it makes debugging easier
+        /// removing all those text manipulations could be a nice little performance boost, if we cared we could wrap them in macros
+        var content: String? {
+            didSet {
+                guard let content  else { return }
 
-        init() { }
+                let newType = NodeParser.consume(content)
+                if newType != self.type {
+                    self.type = newType
+                    self.updateBlock()
+                }
+            }
+        }
+
+        /// pointers to cousins create a linked list of leafs
+        /// twice as fast `toString`
+        /// see LeafLinkedList or LeafNode
+//        var next: Node?
+//        var prev: Node?
+
+        /// a ref to parent allows us to efficiently `bubbleUp` weight when it is added from a cousin
+        private var parent: Node?
+
+        /// currently all nodes have trailing newlines except the last one, which might not
+        var hasTrailingNewline: Bool = true
+
+        override init() { }
         init(_ content: String) {
             self.content = content
             self.weight = content.nsLength
+            self.hasTrailingNewline = content.last == "\n"
+
+            super.init()
+
+            self.type = NodeParser.consume(content)
         }
 
         func nodeAt(offset:Int) -> Node? {
@@ -41,11 +67,21 @@ class TendrilRope {
             return right?.nodeAt(offset: offset - weight)
         }
 
+        override func leafToBranch() {
+            self.content = nil
+            super.leafToBranch()
+        }
+
+//        override func updateBlock(updateAll: Bool = false) {
+//
+//        }
+
         func insert(content: String, at offset: Int, hasTrailingNewline: Bool) {
-            if offset == weight, self.right == nil, ((self.content?.last?.isNewline) != true)
+            if offset == self.weight, !self.hasTrailingNewline
             {
                 self.weight += content.nsLength
                 self.content! += content
+                self.hasTrailingNewline = hasTrailingNewline
             }
             else if offset == 0
             {
@@ -57,22 +93,20 @@ class TendrilRope {
                         self.right = Node()
                         self.left = Node()
 
-                        self.right!.content = self.content
                         self.right!.weight = self.weight
                         self.right!.prev = self.left
                         self.right!.next = self.next
                         self.next?.prev = self.right
+                        self.right!.content = self.content
 
-                        self.left!.content = content
                         self.left!.weight = content.nsLength
                         self.left!.next = self.right
                         self.left!.prev = self.prev
                         self.prev?.next = self.left
+                        self.left!.content = content
 
-                        self.content = nil
+                        self.leafToBranch()
                         self.weight = content.nsLength
-                        self.next = nil
-                        self.prev = nil
                     } else {
                         self.content = content + self.content!
                         self.weight = content.nsLength + self.weight
@@ -118,9 +152,9 @@ class TendrilRope {
                     self.right!.next = self.next
                     self.next?.prev = self.right
 
-                    self.content = nil
-                    self.next = nil
-                    self.prev = nil
+                    self.right?.hasTrailingNewline = hasTrailingNewline
+
+                    self.leafToBranch()
                 }
             }
 
@@ -153,10 +187,10 @@ class TendrilRope {
                     return self
                 } else if !prefix.isEmpty {
                     if let next = self.next {
-                        next.content = prefix + next.content!
-                        next.bubbleUp(location)
                         next.prev = self.prev
                         self.prev?.next = next
+                        (next as! Node).content = prefix + (next as! Node).content!
+                        (next as! Node).bubbleUp(location)
                         return nil
                     } else {
                         // only terminal node may end without newline
@@ -164,9 +198,10 @@ class TendrilRope {
                         self.weight = location
                         return self
                     }
-                } else {
+                } else { /// delete the whole node
                     self.prev?.next = self.next
                     self.next?.prev = self.prev
+                    self.next?.updateBlock()
                     return nil
                 }
             }
@@ -208,7 +243,7 @@ class TendrilRope {
             var output = ""
             while node != nil {
                 output += node!.content!
-                node = node!.next
+                node = (node!.next as? Node)
             }
             return output
         }
@@ -290,7 +325,7 @@ class TendrilRope {
             guard !paragraphs.isEmpty else { return nil }
 
             if paragraphs.count == 1 {
-                return (Node(paragraphs.first! + "\n"), paragraphs.count + 1)
+                return (Node(paragraphs.first! + "\n"), paragraphs.first!.count + 1)
             }
 
             if paragraphs.count == 2 {
@@ -345,7 +380,7 @@ class TendrilRope {
         var paragraphs = content.components(separatedBy: .newlines)
 
         var lastParagraph: String?
-        if (content.last?.isNewline) != true {
+        if content.last != "\n" {
             lastParagraph = paragraphs.last
             paragraphs = paragraphs.dropLast()
         }
@@ -355,7 +390,11 @@ class TendrilRope {
             if let lastParagraph {
                 root.insert(content: lastParagraph, at: weight, hasTrailingNewline: false)
             }
-
+            var head = root
+            while head.left != nil {
+                head = head.left!
+            }
+            head.updateBlock(updateAll: true)
             self.root = root
         }
     }
@@ -370,18 +409,21 @@ class TendrilRope {
             return
         }
 
-        // TODO: it's sloppy and annoying that we replace .newlines with "\n"
-        var components = content.components(separatedBy: .newlines)
-        let lastParagraph = components.last ?? ""
         var relativeOffset = offset
-        for paragraph in components.dropLast() {
-            root.insert(content: paragraph + "\n", at: relativeOffset, hasTrailingNewline: true)
-            relativeOffset += paragraph.nsLength + 1
-        }
-        if lastParagraph != "" {
-//        if !(content.last?.isNewline ?? false) {
-            // if content ends with a newline, the last component will be ""
-            root.insert(content: lastParagraph, at: relativeOffset, hasTrailingNewline: false)
+        var remainder: any StringProtocol = content
+        var idx = remainder.startIndex
+        while idx != remainder.endIndex {
+            var hasTrailingNewline = true
+            if let newLineIdx = remainder.firstIndex(of: "\n") {
+                idx = remainder.index(newLineIdx, offsetBy: 1)
+            } else {
+                idx = remainder.endIndex
+                hasTrailingNewline = false
+            }
+            let s = String(remainder.prefix(upTo: idx))
+            root.insert(content: s, at: relativeOffset, hasTrailingNewline: hasTrailingNewline)
+            remainder = remainder.suffix(from: idx)
+            relativeOffset += s.nsLength
         }
     }
 
