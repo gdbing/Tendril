@@ -72,10 +72,6 @@ class TendrilRope {
             super.leafToBranch()
         }
 
-//        override func updateBlock(updateAll: Bool = false) {
-//
-//        }
-
         func insert(content: String, at offset: Int, hasTrailingNewline: Bool) {
             if offset == self.weight, !self.hasTrailingNewline
             {

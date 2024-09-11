@@ -82,8 +82,15 @@ extension DocumentView {
             textView.delegate = context.coordinator
             textView.isScrollEnabled = true
             textView.isEditable = true
-            textView.allowsEditingTextAttributes = true
             textView.isUserInteractionEnabled = true
+
+            textView.allowsEditingTextAttributes = false
+            textView.autocorrectionType = .no
+            textView.spellCheckingType = .no
+            textView.smartInsertDeleteType = .no
+            textView.smartDashesType = .no
+            textView.smartQuotesType = .no
+
             textView.scrollsToTop = true
             textView.backgroundColor = UIColor.systemBackground
             textView.font = UIFont.systemFont(ofSize: 18)

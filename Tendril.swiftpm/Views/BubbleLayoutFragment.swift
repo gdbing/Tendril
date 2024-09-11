@@ -9,12 +9,10 @@ import UIKit
 import CoreGraphics
 
 class BubbleLayoutFragment: NSTextLayoutFragment {
-    var commentDepth: UInt = 0
-
     override var leadingPadding: CGFloat { return 0 }//20.0 * CGFloat(commentDepth) }
     override var trailingPadding: CGFloat { return 50 }
     override var topMargin: CGFloat { return 0 }//6 }
-    override var bottomMargin: CGFloat { return 5 }//6 }
+    override var bottomMargin: CGFloat { return 0 }//6 }
 
     private var tightTextBounds: CGRect {
         var fragmentTextBounds = CGRect.null
