@@ -230,25 +230,22 @@ extension DocumentView.UIKitDocumentView.Coordinator: NSTextStorageDelegate {
     
     func textStorage(_ textStorage: NSTextStorage, didProcessEditing editedMask: NSTextStorage.EditActions, range editedRange: NSRange, changeInLength delta: Int) {
         if editedMask.contains(.editedCharacters) {
-            if editedRange.length > 0, let range = textStorage.string.range(from: editedRange) {
-                let input = textStorage.string[range]
-                self.parent.controller.rope?.insert(content: String(input), at: editedRange.location)
-            }
             let deletion = editedRange.length - delta
             if deletion > 0 {
+                print("deleted \(editedRange.location),\(deletion)")
                 self.parent.controller.rope?.delete(range: NSMakeRange(editedRange.location, deletion))
             }
 
-            print("didProcessEditing range: \(editedRange.location),\(editedRange.length) delta: \(delta)")
+            if editedRange.length > 0, let range = textStorage.string.range(from: editedRange) {
+                let input = textStorage.string[range]
+                self.parent.controller.rope?.insert(content: String(input), at: editedRange.location)
+                print("inserted \(input) at \(editedRange.location)")
+            }
+
+//            print("didProcessEditing range: \(editedRange.location),\(editedRange.length) delta: \(delta)")
+            print(self.parent.controller.rope?.toString() ?? "🚨")
         }
     }
-
-//    func textStorage(_ textStorage: NSTextStorage, willProcessEditing editedMask: NSTextStorage.EditActions, range editedRange: NSRange, changeInLength delta: Int) {
-//        if !editedMask.contains(.editedCharacters) {
-//            print("willProcessEditing Attributes only")
-//        }
-//        print("willProcessEditing \(editedMask.rawValue) : \(editedRange.location),\(editedRange.length)")
-//    }
 }
 
 

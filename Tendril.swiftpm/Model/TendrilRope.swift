@@ -141,14 +141,16 @@ class TendrilRope {
                     self.left!.prev = self.prev
                     self.prev?.next = self.left
                     self.left!.next = self.right
+                    self.left!.updateBlock()
 
                     self.right!.content = content
                     self.right!.weight = content.nsLength
                     self.right!.prev = self.left
                     self.right!.next = self.next
                     self.next?.prev = self.right
+                    self.right!.updateBlock()
 
-                    self.right?.hasTrailingNewline = hasTrailingNewline
+                    self.right!.hasTrailingNewline = hasTrailingNewline
 
                     self.leafToBranch()
                 }
@@ -239,6 +241,7 @@ class TendrilRope {
             var output = ""
             while node != nil {
                 output += "Node( "
+                output += node!.blockType == .user ? "usr " : node!.blockType == .system ? "sys " : "    "
                 output += node!.content!
                 output += " ),"
                 node = (node!.next as? Node)
