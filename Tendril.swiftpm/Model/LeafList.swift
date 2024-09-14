@@ -37,7 +37,7 @@ class LeafNode {
     }
 
     /// returns whether block changed
-    func updateBlock(updateAll: Bool = false) {
+    func updateBlock() -> Bool {
         let wasComment = self.isComment
         let wasBlockType = self.blockType
 
@@ -51,11 +51,7 @@ class LeafNode {
             if self.type == .commentClose {
                 self.isComment = false
             } else {
-                if wasComment != self.isComment || wasBlockType != self.blockType
-                || updateAll {
-                    self.next?.updateBlock(updateAll: updateAll)
-                }
-                return
+                return wasComment != self.isComment || wasBlockType != self.blockType
             }
         }
 
@@ -70,10 +66,7 @@ class LeafNode {
             self.blockType = nil
         }
 
-        if wasComment != self.isComment || wasBlockType != self.blockType
-        || updateAll {
-            self.next?.updateBlock(updateAll: updateAll)
-        }
+        return wasComment != self.isComment || wasBlockType != self.blockType
     }
 }
 

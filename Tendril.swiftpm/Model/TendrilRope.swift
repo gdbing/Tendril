@@ -27,7 +27,6 @@ class TendrilRope {
                 let newType = NodeParser.consume(content)
                 if newType != self.type {
                     self.type = newType
-                    self.updateBlock()
                 }
             }
         }
@@ -56,15 +55,20 @@ class TendrilRope {
         }
 
         func nodeAt(offset:Int) -> Node? {
+            return nodeWithRemainderAt(offset: offset)?.node
+        }
+
+        /// the remainder is the difference betweent he offset and the location of the node
+        func nodeWithRemainderAt(offset:Int) -> (node: Node, remainder: Int)? {
             if left == nil && offset < weight {
-                return self
+                return (self, offset)
             }
 
             if offset < weight {
-                return left?.nodeAt(offset: offset)
+                return left?.nodeWithRemainderAt(offset: offset)
             }
 
-            return right?.nodeAt(offset: offset - weight)
+            return right?.nodeWithRemainderAt(offset: offset - weight)
         }
 
         override func leafToBranch() {
@@ -141,14 +145,12 @@ class TendrilRope {
                     self.left!.prev = self.prev
                     self.prev?.next = self.left
                     self.left!.next = self.right
-                    self.left!.updateBlock()
 
                     self.right!.content = content
                     self.right!.weight = content.nsLength
                     self.right!.prev = self.left
                     self.right!.next = self.next
                     self.next?.prev = self.right
-                    self.right!.updateBlock()
 
                     self.right!.hasTrailingNewline = hasTrailingNewline
 
@@ -199,7 +201,6 @@ class TendrilRope {
                 } else { /// delete the whole node
                     self.prev?.next = self.next
                     self.next?.prev = self.prev
-                    self.next?.updateBlock()
                     return nil
                 }
             }
@@ -242,6 +243,7 @@ class TendrilRope {
             while node != nil {
                 output += "Node( "
                 output += node!.blockType == .user ? "usr " : node!.blockType == .system ? "sys " : "    "
+                output += node!.isComment ? "c " : " "
                 output += node!.content!
                 output += " ),"
                 node = (node!.next as? Node)
@@ -383,21 +385,23 @@ class TendrilRope {
         var lastParagraph: String?
         if content.last != "\n" {
             lastParagraph = paragraphs.last
-            paragraphs = paragraphs.dropLast()
         }
 
-        if let (root, weight) = Node.parse(paragraphs: paragraphs) {
+        if let (root, weight) = Node.parse(paragraphs: paragraphs.dropLast()) {
             let _ = root.link()
+            self.root = root
             if let lastParagraph {
                 root.insert(content: lastParagraph, at: weight, hasTrailingNewline: false)
             }
-            var head = root
-            while head.left != nil {
-                head = head.left!
-            }
-            head.updateBlock(updateAll: true)
-            self.root = root
+        } else if let lastParagraph {
+            root.insert(content: lastParagraph, at: 0, hasTrailingNewline: false)
         }
+
+        var head = root
+        while head.left != nil {
+            head = head.left!
+        }
+        let _ = self.updateBlocks(in: NSMakeRange(0, content.nsLength))
     }
 
     func nodeAt(location: Int) -> Node? {
@@ -434,5 +438,32 @@ class TendrilRope {
 
     func toString() -> String {
         return root.toString()
+    }
+
+    func updateBlocks(in range: NSRange) -> NSRange? {
+        guard let nodeWithRemainder = root.nodeWithRemainderAt(offset: range.location) else { return nil }
+        var node: Node? = nodeWithRemainder.node
+
+        var isChanged = false
+        var loc = range.location - nodeWithRemainder.remainder
+        var offset = loc
+
+        while node != nil && offset < range.upperBound {
+            isChanged = node!.updateBlock() || isChanged
+            if !isChanged {
+                loc += node!.weight
+            }
+
+            offset += node!.weight
+            node = node!.next as? Node
+        }
+
+        while node?.updateBlock() == true {
+            isChanged = true
+            offset += node!.weight
+            node = node!.next as? Node
+        }
+
+        return isChanged ? NSMakeRange(loc, offset - loc) : nil
     }
 }

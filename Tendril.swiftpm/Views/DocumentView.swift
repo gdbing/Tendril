@@ -110,7 +110,7 @@ extension DocumentView {
                 let text = document.readText()
                 let greys = document.readGreyRanges()
                 if text != uiView.text {
-                    controller.rope = TendrilRope(content: text)
+                    controller.rope = TendrilRope()//content:text)
                     let attrText = NSMutableAttributedString(text, greyRanges: greys)
                     uiView.attributedText = attrText
                     controller.updateWordCount()
@@ -167,7 +167,7 @@ extension DocumentView {
 //                if !text.isEmpty {
 //                    self.parent.controller.rope?.insert(content: text, at: range.location)
 //                }
-                print("inserted \"\(text)\" at \(range.location),\(range.length)")
+//                print("inserted \"\(text)\" at \(range.location),\(range.length)")
 //                print("rope after: \(self.parent.controller.rope?.toString() ?? "")")
                 return true
             }        
@@ -242,7 +242,10 @@ extension DocumentView.UIKitDocumentView.Coordinator: NSTextStorageDelegate {
                 print("inserted \(input) at \(editedRange.location)")
             }
 
-//            print("didProcessEditing range: \(editedRange.location),\(editedRange.length) delta: \(delta)")
+            if let changedBlockRange = self.parent.controller.rope?.updateBlocks(in: editedRange) {
+                textStorage.edited(.editedAttributes, range: changedBlockRange, changeInLength: 0)
+            }
+
             print(self.parent.controller.rope?.toString() ?? "🚨")
         }
     }
