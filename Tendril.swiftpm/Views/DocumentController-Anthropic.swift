@@ -1,15 +1,12 @@
 import SwiftUI
 import SwiftAnthropic
 
-fileprivate let betweenVs = try! NSRegularExpression(pattern: "^vvv[\\s\\S]*?\\R\\^\\^\\^$\\R?", options: [.anchorsMatchLines])
-fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^\\^\\^\\R?", options: [])
-
-//extension DocumentView {
     class DocumentController: ObservableObject {
         @Published var isWriting = false
         @Published var wordCount: Int?
         @Published var time: String?
-     
+        @Published var responseData: (cacheRead: Int, cacheWrite: Int, input: Int, output: Int)?
+
         public var rope: TendrilRope?
         
         private var timer: Timer?
@@ -43,34 +40,20 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
             }
         }
 
-        func merge(messages: [(role: String, content: String)]) -> [(role: String, content: String)]? {
-            var mergedMessages = [(role: String, content: String)]()
-            guard let firstMessage = messages.first else { return nil }
-            
-            var currentRole = firstMessage.role
-            var currentContent = firstMessage.content
-            for message in messages.dropFirst() {
-                if message.role == currentRole {
-                    currentContent += "\n\n" + message.content
-                } else {
-                    mergedMessages.append((role: currentRole, content: currentContent))
-                    currentRole = message.role
-                    currentContent = message.content
-                }
-            }
-            mergedMessages.append((role: currentRole, content: currentContent))
-            
-            return mergedMessages
-        }
-
         func streamAnthropic() {
             guard !self.isWriting, let textView else { return }
-            guard let text = textView.precedingText() else { return } // get text before selection
-            guard let neededWords = self.omitNeedlessWords(text) else { return } // remove commented out text
-            guard let queries = self.massage(text: neededWords) else { return } // convert text into messages
-            guard let mergedQueries = self.merge(messages: queries) else { return }
-            
-            
+
+            guard let precedingText = textView.precedingText() else { return } // get text before selection
+            var anthropicMessages: [MessageParameter.Message]
+            if precedingText == rope?.toString() {
+                anthropicMessages = self.rope?.toAnthropicMessages() ?? []
+            } else {
+                let precedingRope = TendrilRope(content: precedingText)
+                precedingRope.updateBlocks()
+                anthropicMessages = precedingRope.toAnthropicMessages()
+            }
+            guard !anthropicMessages.isEmpty else { return }
+
             let settings = Settings()
 
             guard let model: SwiftAnthropic.Model = {
@@ -82,20 +65,7 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
                 }
             }() else { return }
 
-            var anthropicMessages = mergedQueries.map {
-                let role: MessageParameter.Message.Role = $0.role == "user" ? .user : .assistant
 
-                if $0.content.hasSuffix("\n^CACHE") {
-                    let content = String($0.content.dropLast("\n^CACHE".count))
-//                    print("cached ...\(content.suffix(40))")
-                    let cache = MessageParameter.Message.Content.ContentObject.cache(.init(type: .text, text: content, cacheControl: .init(type: .ephemeral)))
-                    self.startTimer()
-                    return MessageParameter.Message(role: role, content: .list([cache]))
-                }
-                
-                let content: MessageParameter.Message.Content = .text($0.content)
-                return MessageParameter.Message(role: role, content: content)
-            }
             if anthropicMessages.first?.role != "user" {
                 let firstMessage = MessageParameter.Message(role: .user, content: .text(settings.systemMessage))
                 anthropicMessages = [firstMessage] + anthropicMessages
@@ -122,6 +92,22 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
                 textView.setTextColor(UIColor.aiTextGray)
 //                textView.setAuthor("gray")
 
+                if parameters.messages.contains(where: {
+                    switch $0.content {
+                    case .list(let objects):
+                        for object in objects {
+                            if case .cache = object {
+                                return true
+                            }
+                        }
+                        return false
+                    default:
+                        return false
+                    }
+                }) {
+                    self.startTimer()
+                }
+
                 defer {
                     self.isWriting = false
                     textView.isEditable = true
@@ -135,119 +121,18 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
                     if let content = result.delta?.text {
                         textView.insertText(content)
                     }
-                    
-                    var shouldPrint = false
-                    var msg = "type: \(result.type)"
-                    
-                    if let createdCacheTokens = result.message?.usage.cacheCreationInputTokens {
-                        msg += ", cache write: \(createdCacheTokens)"
-                        shouldPrint = true
-                    }
-                    if let readCacheTokens = result.message?.usage.cacheReadInputTokens {
-                        msg += ", cache read: \(readCacheTokens)"
-                        shouldPrint = true
-                    }
-                    if let inputT = result.message?.usage.inputTokens {
-                        msg += ", input: \(inputT)"
-                        shouldPrint = true
-                    }
-                    if let outputT = result.usage?.outputTokens {
-                        msg += ", output: \(outputT)"
-                        shouldPrint = true
-                    }
-                    if shouldPrint {
-                        print(msg)
+
+                    let createdCacheTokens = result.message?.usage.cacheCreationInputTokens
+                    let readCacheTokens = result.message?.usage.cacheReadInputTokens
+                    let inputTokens = result.message?.usage.inputTokens
+                    let outputTokens = result.usage?.outputTokens
+                    if createdCacheTokens != nil || readCacheTokens != nil || inputTokens != nil || outputTokens != nil {
+                        self.responseData = (readCacheTokens ?? 0, createdCacheTokens ?? 0, inputTokens ?? 0, outputTokens ?? 0)
                     }
                 }
             }
         }
 
-        func omitNeedlessWords(_ words: String) -> String? {
-            return words.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
-        }
-        
-        func massage(text: String) -> [(role: String, content: String)]? {
-            enum QueryType {
-                case System
-                case Direction
-                case User
-                case Response
-            }
-            
-            var queryType = QueryType.Response
-            var messages = [(role: String, content: String)]()
-            let append = { (content: String) in
-                switch queryType {
-                case .System:
-                    messages.append((role: "system", content: content))
-                case .Direction:
-                    messages.append((role: "user", content: content))
-                case .User:
-                    messages.append((role: "user", content: content))
-                default:
-                    messages.append((role: "assistant", content: content))
-                }
-            }
-            
-            var accumulation: String = ""
-            var newLine = false
-            for line in text.components(separatedBy: "\n") {
-                if line.hasPrefix("System: ") {
-                    append(accumulation)
-                    accumulation = String(line.trimmingPrefix("System: "))
-                    newLine = false
-                    
-                    queryType = .System
-                } else if line.hasPrefix("Direction: ") {
-                    append(accumulation)
-//                    accumulation = String(line.trimmingPrefix("Direction: "))
-                    accumulation = line
-                    newLine = false
-                    
-                    queryType = .Direction
-                } else if line.hasPrefix("user: ") {
-                    append(accumulation)
-                    accumulation = String(line.trimmingPrefix("user: "))
-                    newLine = false
-                    
-                    queryType = .User
-                } else if line.hasPrefix("Summary: ") {
-                    append(accumulation)
-                    accumulation = line
-                    newLine = false
-                    
-                    queryType = .User
-                } else if line == "-" {
-                    append(accumulation)
-                    accumulation = ""
-                    newLine = false
-                    
-                    queryType = .Response
-                } else if line == "" {
-                    if queryType == .Response {
-                        if accumulation != "" {
-                            newLine = true
-                        } 
-                    } else {
-                        append(accumulation)
-                        accumulation = ""
-                        queryType = .Response
-                    }
-                } else {
-                    if newLine {
-                        accumulation += "\n"
-                        newLine = false
-                    }
-                    if accumulation != "" {
-                        accumulation += "\n"
-                    }
-                    accumulation += line
-                }
-            }
-            append(accumulation)
-            return messages.filter { $0.content != "" }
-        }
-                
         func updateWordCount(isEaten: Bool = false) {
             Task { @MainActor in
                 var words: [String]? = nil
@@ -259,14 +144,14 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
                         .filter { !$0.isEmpty }
                 } else 
                 if let text = self.textView?.precedingText() {
-                    if isEaten {
-                        let uneaten = text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
-                        words = uneaten.components(separatedBy: .whitespacesAndNewlines)
-                            .filter { !$0.isEmpty }
-                    } else {
+//                    if isEaten {
+//                        let uneaten = text.removeMatches(to: betweenVs).removeMatches(to: aboveCarats)
+//                        words = uneaten.components(separatedBy: .whitespacesAndNewlines)
+//                            .filter { !$0.isEmpty }
+//                    } else {
                         words = text.components(separatedBy: .whitespacesAndNewlines)
                             .filter { !$0.isEmpty }
-                    }
+//                    }
                 }
                 if let words {
                     self.wordCount = words.count
@@ -274,4 +159,105 @@ fileprivate let aboveCarats = try! NSRegularExpression(pattern: "[\\s\\S]*\\^\\^
             }
         }
     }
-//}
+
+fileprivate extension TendrilRope {
+    func toAnthropicMessages() -> [MessageParameter.Message] {
+        var messages: [MessageParameter.Message] = []
+        var node: Node? = self.head
+        var currentBlock: LeafNode.BlockType? = nil
+        var currentContent: String = ""
+        var isCurrentCache = false
+
+        while node != nil {
+            guard !node!.isComment else {
+                node = node!.next as? Node
+                continue
+            }
+
+            switch node!.type {
+
+            case .userBlockOpen:
+                fallthrough
+            case .systemBlockOpen:
+                if currentBlock == nil {
+                    if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
+                        messages.append(message)
+                    }
+                    currentBlock = node!.blockType
+                    currentContent = ""
+                    isCurrentCache = false
+                }
+
+            case .blockClose:
+                if currentBlock != nil {
+                    if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
+                        messages.append(message)
+                    }
+                    currentBlock = nil
+                    currentContent = ""
+                    isCurrentCache = false
+                }
+
+            case .user:
+                if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
+                    messages.append(message)
+                }
+                currentBlock = nil
+                currentContent = ""
+                isCurrentCache = false
+                let content = node?.content?.dropFirst("user:".count) ?? ""
+                if let message = self.message(content: String(content), type: .user, cache: false) {
+                    messages.append(message)
+                }
+
+            case .system:
+                if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
+                    messages.append(message)
+                }
+                currentBlock = nil
+                currentContent = ""
+                isCurrentCache = false
+                let content = node?.content?.dropFirst("user:".count) ?? ""
+                if let message = self.message(content: String(content), type: .user, cache: false) {
+                    messages.append(message)
+                }
+
+            case .cache:
+                isCurrentCache = true
+
+            case .some(.commentOpen):
+                continue // this should get caught by the guard !isComment statement
+            case .some(.commentClose):
+                continue
+
+            case .none:
+                currentContent += node!.content!
+            }
+
+            node = node!.next as? Node
+        }
+
+        if !currentContent.isEmpty {
+            if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
+                messages.append(message)
+            }
+        }
+
+        return messages
+    }
+
+    private func message(content: String, type: LeafNode.BlockType?, cache: Bool) -> MessageParameter.Message? {
+        let content = content.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !content.isEmpty else { return nil }
+
+        let role: MessageParameter.Message.Role = type != nil ? .user : .assistant // N.B. converts system messages to user messages
+        if cache {
+            let cache = MessageParameter.Message.Content.ContentObject.cache(.init(type: .text, text: content, cacheControl: .init(type: .ephemeral)))
+            return MessageParameter.Message(role: role, content: .list([cache]))
+        } else {
+            let content: MessageParameter.Message.Content = .text(content)
+            return MessageParameter.Message(role: role, content: content)
+        }
+    }
+}

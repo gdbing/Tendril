@@ -246,7 +246,7 @@ extension DocumentView.UIKitDocumentView.Coordinator: NSTextStorageDelegate {
                 textStorage.edited(.editedAttributes, range: changedBlockRange, changeInLength: 0)
             }
 
-            print(self.parent.controller.rope?.toString() ?? "🚨")
+            print(self.parent.controller.rope?.debugString() ?? "🚨")
         }
     }
 }
@@ -274,5 +274,29 @@ extension UITextView {
         } else {
             return nil
         }
+    }
+}
+
+extension TendrilRope {
+    func debugString() -> String {
+        return self.root.debugString()
+    }
+}
+extension TendrilRope.Node {
+    func debugString() -> String {
+        var node: TendrilRope.Node? = self
+        while node?.left != nil {
+            node = node!.left!
+        }
+        var output = ""
+        while node != nil {
+            output += "Node( "
+            output += node!.blockType == .user ? "usr " : node!.blockType == .system ? "sys " : "    "
+            output += node!.isComment ? "c " : " "
+            output += node!.content!
+            output += " ),"
+            node = (node!.next as? TendrilRope.Node)
+        }
+        return output
     }
 }

@@ -247,11 +247,7 @@ class TendrilRope {
             }
             var output = ""
             while node != nil {
-                output += "Node( "
-                output += node!.blockType == .user ? "usr " : node!.blockType == .system ? "sys " : "    "
-                output += node!.isComment ? "c " : " "
                 output += node!.content!
-                output += " ),"
                 node = (node!.next as? Node)
             }
             return output
@@ -403,11 +399,15 @@ class TendrilRope {
             root.insert(content: lastParagraph, at: 0, hasTrailingNewline: false)
         }
 
-        var head = root
-        while head.left != nil {
-            head = head.left!
+        self.updateBlocks()
+    }
+
+    var head:Node? {
+        var head: Node? = self.root
+        while head != nil, head?.content == nil {
+            head = head?.left
         }
-        let _ = self.updateBlocks(in: NSMakeRange(0, content.nsLength))
+        return head
     }
 
     func nodeAt(location: Int) -> Node? {
@@ -444,6 +444,14 @@ class TendrilRope {
 
     func toString() -> String {
         return root.toString()
+    }
+
+    func updateBlocks() {
+        var node = self.head
+        while node != nil {
+            let _ = node!.updateBlock()
+            node = node!.next as? Node
+        }
     }
 
     func updateBlocks(in range: NSRange) -> NSRange? {
