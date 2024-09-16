@@ -21,12 +21,11 @@ class TendrilRope {
         /// storing content isn't actually required but we might change our minds later, and it makes debugging easier
         /// removing all those text manipulations could be a nice little performance boost, if we cared we could wrap them in macros
         var content: String? {
-            didSet {
-                guard let content  else { return }
+            willSet(newContent) {
+                guard let newContent  else { return }
 
-                let newType = NodeParser.consume(content)
-                if newType != self.type {
-                    self.type = newType
+                if newContent.prefix(10) != self.content?.prefix(10) { // "```system\n".count == 10
+                    self.type = NodeParser.consume(newContent)
                 }
             }
         }
@@ -125,7 +124,9 @@ class TendrilRope {
                         let subString2 = self.content!.suffix(from: offsetIndex)
                         self.content = subString1 + content
                         self.weight = self.content!.nsLength
-                        self.insert(content: String(subString2), at: self.weight, hasTrailingNewline: true)
+                        let hadTrailingNewline = self.hasTrailingNewline
+                        self.hasTrailingNewline = true
+                        self.insert(content: String(subString2), at: self.weight, hasTrailingNewline: hadTrailingNewline)
                     } else {
                         self.weight += content.nsLength
                         self.content!.insert(contentsOf: content, at: offsetIndex)
@@ -145,6 +146,9 @@ class TendrilRope {
                     self.left!.prev = self.prev
                     self.prev?.next = self.left
                     self.left!.next = self.right
+                    self.left!.type = self.type
+                    self.left!.blockType = self.blockType
+                    self.left!.isComment = self.isComment
 
                     self.right!.content = content
                     self.right!.weight = content.nsLength
@@ -193,7 +197,9 @@ class TendrilRope {
                         (next as! Node).bubbleUp(location)
                         return nil
                     } else {
+                        // if next == nil it must be terminal node,
                         // only terminal node may end without newline
+                        self.hasTrailingNewline = false
                         self.content = String(prefix)
                         self.weight = location
                         return self

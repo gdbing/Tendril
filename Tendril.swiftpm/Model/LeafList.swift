@@ -80,13 +80,13 @@ struct NodeParser {
 //    case userBlockOpen   // ```user\n
 //    case systemBlockOpen // ```system\n
 //    case blockClose      // ```\n
-        if input.hasPrefix("<CACHE") {
+        if input.hasPrefix("<CACHE/>") {
             return .cache
         }
-        if input.hasPrefix("user:") {
+        if input.hasPrefix("user: ") {
             return .user
         }
-        if input.hasPrefix("system:") {
+        if input.hasPrefix("system: ") {
             return .system
         }
         if input.hasPrefix("<!--") {
@@ -95,10 +95,10 @@ struct NodeParser {
         if input.hasPrefix("-->") {
             return .commentClose
         }
-        if input.hasPrefix("```user") {
+        if input.hasPrefix("```user\n") {
             return .userBlockOpen
         }
-        if input.hasPrefix("```system") {
+        if input.hasPrefix("```system\n") {
             return .systemBlockOpen
         }
         if input.hasPrefix("```") {
