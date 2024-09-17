@@ -109,16 +109,7 @@ struct UIKitDocumentView: UIViewRepresentable {
 
         func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
             textView.setTextColor(.label)
-//                textView.setAuthor(nil)
-//                print("rope before: \(self.parent.controller.rope?.toString() ?? "")")
-//                if range.length > 0 {
-//                    self.parent.controller.rope?.delete(range: range)
-//                }
-//                if !text.isEmpty {
-//                    self.parent.controller.rope?.insert(content: text, at: range.location)
-//                }
-//                print("inserted \"\(text)\" at \(range.location),\(range.length)")
-//                print("rope after: \(self.parent.controller.rope?.toString() ?? "")")
+//            textView.setAuthor(nil)
             return true
         }
     }
@@ -181,21 +172,17 @@ extension UIKitDocumentView.Coordinator: NSTextStorageDelegate {
         if editedMask.contains(.editedCharacters) {
             let deletion = editedRange.length - delta
             if deletion > 0 {
-                print("deleted \(editedRange.location),\(deletion)")
                 self.parent.controller.rope?.delete(range: NSMakeRange(editedRange.location, deletion))
             }
 
             if editedRange.length > 0, let range = textStorage.string.range(from: editedRange) {
                 let input = textStorage.string[range]
                 self.parent.controller.rope?.insert(content: String(input), at: editedRange.location)
-                print("inserted \(input) at \(editedRange.location)")
             }
 
             if let changedBlockRange = self.parent.controller.rope?.updateBlocks(in: editedRange) {
                 textStorage.edited(.editedAttributes, range: changedBlockRange, changeInLength: 0)
             }
-
-            print(self.parent.controller.rope?.debugString() ?? "🚨")
         }
     }
 }
