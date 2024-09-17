@@ -205,8 +205,13 @@ fileprivate extension TendrilRope {
                 currentBlock = nil
                 currentContent = ""
                 isCurrentCache = false
-                let content = node?.content?.dropFirst("user:".count) ?? ""
-                if let message = self.message(content: String(content), type: .user, cache: false) {
+                let content: String
+                if node?.content?.hasPrefix("user:") == true {
+                    content = String(node?.content?.dropFirst("user:".count) ?? "")
+                } else {
+                    content = node!.content!
+                }
+                if let message = self.message(content: content, type: .user, cache: false) {
                     messages.append(message)
                 }
                 
@@ -217,7 +222,7 @@ fileprivate extension TendrilRope {
                 currentBlock = nil
                 currentContent = ""
                 isCurrentCache = false
-                let content = node?.content?.dropFirst("user:".count) ?? ""
+                let content = node?.content?.dropFirst("system:".count) ?? ""
                 if let message = self.message(content: String(content), type: .user, cache: false) {
                     messages.append(message)
                 }

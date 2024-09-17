@@ -86,6 +86,9 @@ struct NodeParser {
         if input.hasPrefix("user: ") {
             return .user
         }
+        if input.hasPrefix("Summary: ") {
+            return .user
+        }
         if input.hasPrefix("system: ") {
             return .system
         }
