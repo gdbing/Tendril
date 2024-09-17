@@ -13,7 +13,9 @@ struct DocumentView: View {
                 .toolbar {
                     ToolbarItem  {
                         Button(action: {
-                            showAlert.toggle()
+                            self.nextSection()
+//                            self.commentSelection()
+//                            showAlert.toggle()
                         }, label: {
                             Image(systemName: "figure.wave")
                         })
@@ -298,5 +300,70 @@ extension TendrilRope.Node {
             node = (node!.next as? TendrilRope.Node)
         }
         return output
+    }
+}
+
+extension DocumentView {
+    func commentSelection() {
+        // This could be "smarter" but to what end?
+        guard let selection = self.controller.textView?.selectedRange, let rope = self.controller.rope, let textView = self.controller.textView else { 
+            return 
+        }
+
+        let firstNode = rope.nodeAt(location: selection.location)!
+        let lastNode = rope.nodeAt(location: selection.location + selection.length)!
+        if firstNode.isComment || lastNode.isComment{
+            self.uncommentSelection()
+            return
+        }
+        let belowNewline = lastNode.location() + lastNode.weight 
+        textView.selectedRange = NSMakeRange(belowNewline, 0)
+        textView.insertText("-->\n")
+
+        let aboveNewline = firstNode.location()
+        textView.selectedRange = NSMakeRange(aboveNewline, 0)
+        textView.insertText("<!--\n")
+        
+        let newLocation = aboveNewline + "<!--\n".nsLength
+        let newLength = belowNewline - newLocation
+        textView.selectedRange = NSMakeRange(newLocation, newLength)
+    }
+    
+    private func uncommentSelection() {
+        // How should this behave? 
+    }
+    
+    func nextSection() {
+        // option down
+        guard let selection = self.controller.textView?.selectedRange, let rope = self.controller.rope, let textView = self.controller.textView else { 
+            return 
+        }
+        
+        var node: TendrilRope.Node? = rope.nodeAt(location: selection.location)!
+        let isComment = node!.isComment
+        let blockType = node!.blockType
+        if node!.next != nil {
+            node = node!.next as? TendrilRope.Node
+        }
+        while node!.next != nil {
+            if node!.isComment != isComment || 
+                node!.blockType != blockType ||
+                node?.type == .user ||
+                node?.type == .system ||
+                node?.type == .cache {
+                textView.selectedRange = NSMakeRange(node!.location(), 0)
+//                textView.scrollRangeToVisible(NSMakeRange(node!.location(), 0))
+                return
+            }
+            
+            node = node!.next as? TendrilRope.Node
+        }
+        textView.selectedRange = NSMakeRange(node!.location() + node!.weight, 0)
+//        textView.scrollRangeToVisible(NSMakeRange(node!.location() + node!.weight, 0))
+    }
+    
+    func prevSection() {
+        // option up
+        
     }
 }

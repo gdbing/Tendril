@@ -101,7 +101,7 @@ struct NodeParser {
         if input.hasPrefix("```system\n") {
             return .systemBlockOpen
         }
-        if input.hasPrefix("```") {
+        if input.hasPrefix("```\n") {
             return .blockClose
         }
 

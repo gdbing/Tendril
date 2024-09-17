@@ -284,6 +284,17 @@ class TendrilRope {
             let rightHeight = right?.height() ?? 0
             return max(leftHeight, rightHeight) + 1
         }
+        
+        func location() -> Int {
+            if self.parent == nil {
+                return 0
+            }
+            if self.parent!.right === self {
+                return parent!.weight + parent!.location()
+            } else {
+                return parent!.location()
+            }
+        }
 
         /// Basic AVL balance function
         private func balance() {
