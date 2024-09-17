@@ -385,7 +385,8 @@ class TendrilRope {
             self.balance()
         }
     }
-
+    
+    private let queue = DispatchQueue(label: "com.tendrilRope.synchronousQueue")
     var root: Node = Node("")
 
     init() { }
@@ -393,7 +394,7 @@ class TendrilRope {
     init(content: String) {
         guard !content.isEmpty else { return }
 
-        var paragraphs = content.components(separatedBy: .newlines)
+        let paragraphs = content.components(separatedBy: .newlines)
 
         var lastParagraph: String?
         if content.last != "\n" {
@@ -404,10 +405,10 @@ class TendrilRope {
             let _ = root.link()
             self.root = root
             if let lastParagraph {
-                root.insert(content: lastParagraph, at: weight, hasTrailingNewline: false)
+                self.root.insert(content: lastParagraph, at: weight, hasTrailingNewline: false)
             }
         } else if let lastParagraph {
-            root.insert(content: lastParagraph, at: 0, hasTrailingNewline: false)
+            self.root.insert(content: lastParagraph, at: 0, hasTrailingNewline: false)
         }
 
         self.updateBlocks()
@@ -422,73 +423,83 @@ class TendrilRope {
     }
 
     func nodeAt(location: Int) -> Node? {
-        return self.root.nodeAt(offset: location)
+        queue.sync {
+            return self.root.nodeAt(offset: location)
+        }
     }
 
     func insert(content: String, at offset: Int) {
-        guard content.count > 0 else {
-            print("ERROR: ParagraphRope insert \"\"")
-            return
-        }
-
-        var relativeOffset = offset
-        var remainder: any StringProtocol = content
-        var idx = remainder.startIndex
-        while idx != remainder.endIndex {
-            var hasTrailingNewline = true
-            if let newLineIdx = remainder.firstIndex(of: "\n") {
-                idx = remainder.index(newLineIdx, offsetBy: 1)
-            } else {
-                idx = remainder.endIndex
-                hasTrailingNewline = false
+        queue.sync {
+            guard content.count > 0 else {
+                print("ERROR: ParagraphRope insert \"\"")
+                return
             }
-            let s = String(remainder.prefix(upTo: idx))
-            root.insert(content: s, at: relativeOffset, hasTrailingNewline: hasTrailingNewline)
-            remainder = remainder.suffix(from: idx)
-            relativeOffset += s.nsLength
+
+            var relativeOffset = offset
+            var remainder: any StringProtocol = content
+            var idx = remainder.startIndex
+            while idx != remainder.endIndex {
+                var hasTrailingNewline = true
+                if let newLineIdx = remainder.firstIndex(of: "\n") {
+                    idx = remainder.index(newLineIdx, offsetBy: 1)
+                } else {
+                    idx = remainder.endIndex
+                    hasTrailingNewline = false
+                }
+                let s = String(remainder.prefix(upTo: idx))
+                self.root.insert(content: s, at: relativeOffset, hasTrailingNewline: hasTrailingNewline)
+                remainder = remainder.suffix(from: idx)
+                relativeOffset += s.nsLength
+            }
         }
     }
 
     func delete(range: NSRange) {
-        self.root = root.delete(range: range) ?? Node("")
+        queue.sync {
+            self.root = self.root.delete(range: range) ?? Node("")
+        }
     }
 
     func toString() -> String {
-        return root.toString()
+        return self.root.toString()
     }
 
     func updateBlocks() {
-        var node = self.head
-        while node != nil {
-            let _ = node!.updateBlock()
-            node = node!.next as? Node
+        queue.sync {
+            var node = self.head
+            while node != nil {
+                let _ = node!.updateBlock()
+                node = node!.next as? Node
+            }
         }
     }
 
     func updateBlocks(in range: NSRange) -> NSRange? {
-        guard let nodeWithRemainder = root.nodeWithRemainderAt(offset: range.location) else { return nil }
-        var node: Node? = nodeWithRemainder.node
+        queue.sync {
+            guard let nodeWithRemainder = self.root.nodeWithRemainderAt(offset: range.location) else { return nil }
+            var node: Node? = nodeWithRemainder.node
 
-        var isChanged = false
-        var loc = range.location - nodeWithRemainder.remainder
-        var offset = loc
+            var isChanged = false
+            var loc = range.location - nodeWithRemainder.remainder
+            var offset = loc
 
-        while node != nil && offset < range.upperBound {
-            isChanged = node!.updateBlock() || isChanged
-            if !isChanged {
-                loc += node!.weight
+            while node != nil && offset < range.upperBound {
+                isChanged = node!.updateBlock() || isChanged
+                if !isChanged {
+                    loc += node!.weight
+                }
+
+                offset += node!.weight
+                node = node!.next as? Node
             }
 
-            offset += node!.weight
-            node = node!.next as? Node
-        }
+            while node?.updateBlock() == true {
+                isChanged = true
+                offset += node!.weight
+                node = node!.next as? Node
+            }
 
-        while node?.updateBlock() == true {
-            isChanged = true
-            offset += node!.weight
-            node = node!.next as? Node
+            return isChanged ? NSMakeRange(loc, offset - loc) : nil
         }
-
-        return isChanged ? NSMakeRange(loc, offset - loc) : nil
     }
 }

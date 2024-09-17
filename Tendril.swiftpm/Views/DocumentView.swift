@@ -73,11 +73,13 @@ extension DocumentView {
             return
         }
         // This could be "smarter" but to what end?
-        guard let selection = self.controller.textView?.selectedRange, let rope = self.controller.rope, let textView = self.controller.textView else { 
-            return 
+        guard let selection = self.controller.textView?.selectedRange,
+                let rope = self.controller.rope,
+                let textView = self.controller.textView,
+                let firstNode = rope.nodeAt(location: selection.location) else {
+            return
         }
 
-        let firstNode = rope.nodeAt(location: selection.location)!
         let lastNode = rope.nodeAt(location: selection.location + selection.length)!
         let length = lastNode.location() + lastNode.weight - firstNode.location()
 
@@ -95,11 +97,13 @@ extension DocumentView {
     
     private func uncommentSelection() -> Bool {
         // How should this behave?
-        guard let selection = self.controller.textView?.selectedRange, let rope = self.controller.rope, let textView = self.controller.textView else {
+        guard let selection = self.controller.textView?.selectedRange,
+                let rope = self.controller.rope,
+                let textView = self.controller.textView,
+                let firstNode = rope.nodeAt(location: selection.location)else {
             return false
         }
 
-        let firstNode = rope.nodeAt(location: selection.location)!
         if firstNode.isComment {
             var openNode: TendrilRope.Node = firstNode
             while openNode.type != .commentOpen || openNode.prev?.isComment == true {
