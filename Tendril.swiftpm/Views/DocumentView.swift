@@ -41,8 +41,22 @@ struct DocumentView: View {
                         Text("\(wordCount) words ")
                             .monospacedDigit()
                     })
-                    if let time = controller.time {
-                        Text(time)
+
+                    if self.controller.tokenInput > 0, self.controller.tokenOutput > 0 {
+                        Text("✏️ \(self.controller.tokenInput)")
+                            .monospacedDigit()
+                        Text("🤖 \(self.controller.tokenOutput)")
+                            .monospacedDigit()
+                    }
+                    if let time = controller.time, time > 0 {
+                        let cacheWriteString = self.controller.cacheTokenWrite > 0 ? "\(self.controller.cacheTokenWrite) → " : ""
+                        let cacheReadString = self.controller.cacheTokenRead > 0 ? " → \(self.controller.cacheTokenRead)" : ""
+                        Text("\(cacheWriteString)💾\(cacheReadString)")
+
+                        let minutes = Int(time) / 60
+                        let seconds = Int(time) % 60
+                        let timeString = String(format: "%d:%02d", minutes, seconds)
+                        Text(timeString)
                             .monospacedDigit()
                     }
                 }

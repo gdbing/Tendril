@@ -4,9 +4,12 @@ import SwiftAnthropic
 class DocumentController: ObservableObject {
     @Published var isWriting = false
     @Published var wordCount: Int?
-    @Published var time: String?
-    @Published var responseData: (cacheRead: Int, cacheWrite: Int, input: Int, output: Int)?
-    
+    @Published var time: Int?
+    @Published var cacheTokenRead: Int = 0
+    @Published var cacheTokenWrite: Int = 0
+    @Published var tokenInput: Int = 0
+    @Published var tokenOutput: Int = 0
+
     public var rope: TendrilRope?
     
     private var timer: Timer?
@@ -20,16 +23,19 @@ class DocumentController: ObservableObject {
                 self.time = nil
                 timer.invalidate()
             }
-            
-            let minutes = Int(timeRemaining) / 60
-            let seconds = Int(timeRemaining) % 60
-            self.time = String(format: "%d:%02d", minutes, seconds)
+
+            self.time = Int(timeRemaining)
         }
     }
     
     var textView: UITextView?
     
     func gptIfy() {
+        cacheTokenRead = 0
+        cacheTokenWrite = 0
+        tokenInput = 0
+        tokenOutput = 0
+        
         switch Settings().model {
         case "claude-3-opus-20240229", "claude-3-5-sonnet-20240620", "claude-3-haiku-20240307":
             streamAnthropic()
@@ -122,12 +128,17 @@ class DocumentController: ObservableObject {
                     textView.insertText(content)
                 }
                 
-                let createdCacheTokens = result.message?.usage.cacheCreationInputTokens
-                let readCacheTokens = result.message?.usage.cacheReadInputTokens
-                let inputTokens = result.message?.usage.inputTokens
-                let outputTokens = result.usage?.outputTokens
-                if createdCacheTokens != nil || readCacheTokens != nil || inputTokens != nil || outputTokens != nil {
-                    self.responseData = (readCacheTokens ?? 0, createdCacheTokens ?? 0, inputTokens ?? 0, outputTokens ?? 0)
+                if let createdCacheTokens = result.message?.usage.cacheCreationInputTokens {
+                    self.cacheTokenWrite = createdCacheTokens
+                }
+                if let readCacheTokens = result.message?.usage.cacheReadInputTokens {
+                    self.cacheTokenRead = readCacheTokens
+                }
+                if let inputTokens = result.message?.usage.inputTokens {
+                    self.tokenInput = inputTokens
+                }
+                if let outputTokens = result.usage?.outputTokens {
+                    self.tokenOutput = outputTokens
                 }
             }
         }
