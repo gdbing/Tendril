@@ -13,12 +13,14 @@ struct DocumentView: View {
                 .toolbar {
                     ToolbarItem  {
                         Button(action: {
-                            self.nextSection()
-//                            self.commentSelection()
+//                            self.nextSection()
+                            self.commentSelection()
 //                            showAlert.toggle()
                         }, label: {
                             Image(systemName: "figure.wave")
                         })
+                        .hidden()
+                        .keyboardShortcut(.init("/"), modifiers: [.command])
                         .alert(isPresented: $showAlert) {
                             Alert(title: Text("system message"), message: Text(settings.systemMessage), dismissButton: .default(Text("OK")))
                         }
@@ -67,6 +69,9 @@ struct DocumentView: View {
 
 extension DocumentView {
     func commentSelection() {
+        if self.uncommentSelection() {
+            return
+        }
         // This could be "smarter" but to what end?
         guard let selection = self.controller.textView?.selectedRange, let rope = self.controller.rope, let textView = self.controller.textView else { 
             return 
@@ -74,11 +79,9 @@ extension DocumentView {
 
         let firstNode = rope.nodeAt(location: selection.location)!
         let lastNode = rope.nodeAt(location: selection.location + selection.length)!
-        if firstNode.isComment || lastNode.isComment{
-            self.uncommentSelection()
-            return
-        }
-        let belowNewline = lastNode.location() + lastNode.weight 
+        let length = lastNode.location() + lastNode.weight - firstNode.location()
+
+        let belowNewline = lastNode.location() + lastNode.weight
         textView.selectedRange = NSMakeRange(belowNewline, 0)
         textView.insertText("-->\n")
 
@@ -87,12 +90,43 @@ extension DocumentView {
         textView.insertText("<!--\n")
         
         let newLocation = aboveNewline + "<!--\n".nsLength
-        let newLength = belowNewline - newLocation
-        textView.selectedRange = NSMakeRange(newLocation, newLength)
+        textView.selectedRange = NSMakeRange(newLocation, length)
     }
     
-    private func uncommentSelection() {
-        // How should this behave? 
+    private func uncommentSelection() -> Bool {
+        // How should this behave?
+        guard let selection = self.controller.textView?.selectedRange, let rope = self.controller.rope, let textView = self.controller.textView else {
+            return false
+        }
+
+        let firstNode = rope.nodeAt(location: selection.location)!
+        if firstNode.isComment {
+            var openNode: TendrilRope.Node = firstNode
+            while openNode.type != .commentOpen || openNode.prev?.isComment == true {
+                openNode = openNode.prev as! TendrilRope.Node
+            }
+            var closeNode: TendrilRope.Node? = firstNode
+            while closeNode != nil && closeNode!.type != .commentClose {
+                closeNode = closeNode?.next as? TendrilRope.Node
+            }
+
+            let openNodeLocation = openNode.location()
+            let openNodeWeight = openNode.weight
+            let selectionLength = (closeNode != nil ? closeNode!.location() - 1 : textView.text.nsLength) - (openNodeLocation + openNodeWeight)
+            if let closeNode {
+                let closeNodeSelection = NSMakeRange(closeNode.location(), closeNode.weight)
+                textView.selectedRange = closeNodeSelection
+                textView.insertText("")
+            }
+            textView.selectedRange = NSMakeRange(openNodeLocation, openNodeWeight)
+            textView.insertText("")
+
+            textView.selectedRange = NSMakeRange(openNodeLocation, selectionLength)
+
+            return true
+        }
+
+        return false
     }
     
     func nextSection() {
