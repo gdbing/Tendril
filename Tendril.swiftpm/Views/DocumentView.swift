@@ -11,19 +11,21 @@ struct DocumentView: View {
             UIKitDocumentView(controller: controller, 
                               document: $document)
                 .toolbar {
-                    ToolbarItem  {
-                        Button(action: {
-//                            self.nextSection()
-                            self.commentSelection()
-//                            showAlert.toggle()
-                        }, label: {
-                            Image(systemName: "figure.wave")
-                        })
-                        .hidden()
-                        .keyboardShortcut(.init("/"), modifiers: [.command])
-                        .alert(isPresented: $showAlert) {
-                            Alert(title: Text("system message"), message: Text(settings.systemMessage), dismissButton: .default(Text("OK")))
-                        }
+                    ToolbarItem {
+                        ZStack {
+                            Button("next section") {
+                                self.nextSection()
+                            }
+                            .keyboardShortcut(.init("j"), modifiers: [.command])
+                            Button("prev section") {
+                                self.prevSection()
+                            }
+                            .keyboardShortcut(.init("k"), modifiers: [.command])
+                            Button("comment") {
+                                self.commentSelection()
+                            }
+                            .keyboardShortcut(.init("/"), modifiers: [.command])
+                        }.hidden()
                     }
                     ToolbarItem(placement: .primaryAction) {
                         Button(action: {
@@ -135,11 +137,27 @@ extension DocumentView {
     
     func nextSection() {
         // option down
-        guard let selection = self.controller.textView?.selectedRange, let rope = self.controller.rope, let textView = self.controller.textView else { 
-            return 
+        guard let selection = self.controller.textView?.selectedRange,
+                let rope = self.controller.rope,
+                let textView = self.controller.textView else {
+            return
         }
         
-        var node: TendrilRope.Node? = rope.nodeAt(location: selection.location)!
+        var node: TendrilRope.Node? = rope.nodeAt(location: selection.location)
+
+        if node?.type == .user || node?.type == .system {
+            node = node?.next as? TendrilRope.Node
+            while node?.content?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
+                node = node?.next as? TendrilRope.Node
+            }
+            if let node {
+                textView.selectedRange = NSMakeRange(node.location(), 0)
+                return
+            } else {
+                return
+            }
+        }
+
         let isComment = node!.isComment
         let blockType = node!.blockType
         if node!.next != nil {
@@ -148,9 +166,9 @@ extension DocumentView {
         while node!.next != nil {
             if node!.isComment != isComment || 
                 node!.blockType != blockType ||
-                node?.type == .user ||
-                node?.type == .system ||
-                node?.type == .cache {
+                node!.type == .user ||
+                node!.type == .system ||
+                node!.type == .cache {
                 textView.selectedRange = NSMakeRange(node!.location(), 0)
 //                textView.scrollRangeToVisible(NSMakeRange(node!.location(), 0))
                 return
@@ -164,6 +182,14 @@ extension DocumentView {
     
     func prevSection() {
         // option up
-        
+        guard let selection = self.controller.textView?.selectedRange,
+                let rope = self.controller.rope,
+                let textView = self.controller.textView else {
+            return
+        }
+
+        var node: TendrilRope.Node? = rope.nodeAt(location: selection.location)
+
+
     }
 }
