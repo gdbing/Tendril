@@ -187,9 +187,7 @@ fileprivate extension TendrilRope {
             
             switch node!.type {
                 
-            case .userBlockOpen:
-                fallthrough
-            case .systemBlockOpen:
+            case .userBlockOpen, .systemBlockOpen:
                 if currentBlock == nil {
                     if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
                         messages.append(message)
@@ -241,11 +239,9 @@ fileprivate extension TendrilRope {
             case .cache:
                 isCurrentCache = true
                 
-            case .some(.commentOpen):
-                continue // this should get caught by the guard !isComment statement
-            case .some(.commentClose):
-                continue
-                
+            case .commentOpen, .commentClose:
+                break
+
             case .none:
                 currentContent += node!.content!
             }

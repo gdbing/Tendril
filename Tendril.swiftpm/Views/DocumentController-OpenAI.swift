@@ -70,9 +70,7 @@ fileprivate extension TendrilRope {
             
             switch node!.type {
                 
-            case .userBlockOpen:
-                fallthrough
-            case .systemBlockOpen:
+            case .userBlockOpen, .systemBlockOpen:
                 if currentBlock == nil {
                     if let message = self.message(content: currentContent, type: .system) {
                         messages.append(message)
@@ -96,7 +94,12 @@ fileprivate extension TendrilRope {
                 }
                 currentBlock = nil
                 currentContent = ""
-                let content = node?.content?.dropFirst("user:".count) ?? ""
+                let content: String
+                if node?.content?.hasPrefix("user:") == true {
+                    content = String(node?.content?.dropFirst("user:".count) ?? "")
+                } else {
+                    content = node!.content!
+                }
                 if let message = self.message(content: String(content), type: .user) {
                     messages.append(message)
                 }
@@ -112,12 +115,8 @@ fileprivate extension TendrilRope {
                     messages.append(message)
                 }
                 
-            case .cache:
-                continue
-            case .some(.commentOpen):
-                continue // this should get caught by the guard !isComment statement
-            case .some(.commentClose):
-                continue
+            case .cache, .commentOpen, .commentClose:
+                break
                 
             case .none:
                 currentContent += node!.content!
