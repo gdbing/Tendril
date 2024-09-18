@@ -118,7 +118,7 @@ class TendrilRope {
                     self.weight += content.nsLength
                     left.insert(content: content, at: offset, hasTrailingNewline: hasTrailingNewline)
                 } else {
-                    let offsetIndex = self.content!.index(self.content!.startIndex, offsetBy: offset)
+                    let offsetIndex = self.content!.charIndex(byteIndex: offset)!
                     if hasTrailingNewline {
                         let subString1 = self.content!.prefix(upTo: offsetIndex)
                         let subString2 = self.content!.suffix(from: offsetIndex)
