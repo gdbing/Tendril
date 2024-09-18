@@ -414,7 +414,7 @@ class TendrilRope {
         self.updateBlocks()
     }
 
-    var head:Node? {
+    var head: Node? {
         var head: Node? = self.root
         while head != nil, head?.content == nil {
             head = head?.left
@@ -422,9 +422,21 @@ class TendrilRope {
         return head
     }
 
+    var tail: Node? {
+        var tail: Node? = self.root
+        while tail != nil, tail?.content == nil {
+            tail = tail?.right
+        }
+        return tail
+    }
+
     func nodeAt(location: Int) -> Node? {
         queue.sync {
-            return self.root.nodeAt(offset: location)
+            if let node = self.root.nodeAt(offset: location) {
+                return node
+            } else {
+                return tail
+            }
         }
     }
 

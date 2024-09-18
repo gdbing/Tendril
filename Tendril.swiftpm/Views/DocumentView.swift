@@ -87,7 +87,11 @@ extension DocumentView {
 
         let belowNewline = lastNode.location() + lastNode.weight
         textView.selectedRange = NSMakeRange(belowNewline, 0)
-        textView.insertText("-->\n")
+        if lastNode.hasTrailingNewline {
+            textView.insertText("-->\n")
+        } else {
+            textView.insertText("\n-->")
+        }
 
         let aboveNewline = firstNode.location()
         textView.selectedRange = NSMakeRange(aboveNewline, 0)
