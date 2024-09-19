@@ -430,12 +430,16 @@ class TendrilRope {
         return tail
     }
 
+    var length: Int = 0
+
     func nodeAt(location: Int) -> Node? {
         queue.sync {
             if let node = self.root.nodeAt(offset: location) {
                 return node
-            } else {
+            } else if location == length {
                 return tail
+            } else {
+                return nil
             }
         }
     }
@@ -446,7 +450,6 @@ class TendrilRope {
                 print("ERROR: ParagraphRope insert \"\"")
                 return
             }
-
             var relativeOffset = offset
             var remainder: any StringProtocol = content
             var idx = remainder.startIndex
@@ -463,12 +466,15 @@ class TendrilRope {
                 remainder = remainder.suffix(from: idx)
                 relativeOffset += s.nsLength
             }
+
+            self.length += content.nsLength
         }
     }
 
     func delete(range: NSRange) {
         queue.sync {
             self.root = self.root.delete(range: range) ?? Node("")
+            self.length -= range.length
         }
     }
 
