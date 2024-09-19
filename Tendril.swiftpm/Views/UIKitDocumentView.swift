@@ -121,7 +121,7 @@ extension UIKitDocumentView.Coordinator : NSTextLayoutManagerDelegate {
                            textLayoutFragmentFor location: NSTextLocation,
                            in textElement: NSTextElement) -> NSTextLayoutFragment {
         let offset = textElement.textContentManager!.offset(from: textLayoutManager.documentRange.location, to: location)
-        if let node = self.parent.controller.rope?.nodeAt(location: offset) {
+        if let node = self.parent.controller.rope?.nodeAt(location: offset), !node.content!.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             if node.isComment {
                 return NSTextLayoutFragment(textElement: textElement, range: textElement.elementRange)
             }

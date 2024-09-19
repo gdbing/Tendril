@@ -9,10 +9,10 @@ import UIKit
 import CoreGraphics
 
 class BubbleLayoutFragment: NSTextLayoutFragment {
-    override var leadingPadding: CGFloat { return 0 }//20.0 * CGFloat(commentDepth) }
-    override var trailingPadding: CGFloat { return 50 }
-    override var topMargin: CGFloat { return 0 }//6 }
-    override var bottomMargin: CGFloat { return 0 }//6 }
+    override var leadingPadding: CGFloat { return 0 }
+    override var trailingPadding: CGFloat { return 60 }
+    override var topMargin: CGFloat { return 0 }
+    override var bottomMargin: CGFloat { return 0 }
 
     private var tightTextBounds: CGRect {
         var fragmentTextBounds = CGRect.null
@@ -27,10 +27,9 @@ class BubbleLayoutFragment: NSTextLayoutFragment {
         return fragmentTextBounds
     }
 
-    // Return the bounding rect of the chat bubble, in the space of the first line fragment.
-    private var bubbleRect: CGRect { return tightTextBounds.insetBy(dx: -8, dy: -2) }
-
-    private var bubbleCornerRadius: CGFloat { return 10 }
+    // Return the bounding rect of the bubble, in the space of the first line fragment.
+    private var bubbleRect: CGRect { return tightTextBounds.insetBy(dx: -10, dy: 0) }
+    private var bubbleCornerRadius: CGFloat { return 4 }
 
     init(textElement: NSTextElement, range rangeInElement: NSTextRange?, bubbleColor: UIColor = .userBubble) {
         self.bubbleColor = bubbleColor
