@@ -76,9 +76,9 @@ extension DocumentView {
         }
         // This could be "smarter" but to what end?
         guard let selection = self.controller.textView?.selectedRange,
-                let rope = self.controller.rope,
-                let textView = self.controller.textView,
-                let firstNode = rope.nodeAt(location: selection.location) else {
+              let rope = self.controller.rope,
+              let textView = self.controller.textView,
+              let firstNode = rope.nodeAt(location: selection.location) else {
             return
         }
 
@@ -104,9 +104,9 @@ extension DocumentView {
     private func uncommentSelection() -> Bool {
         // How should this behave?
         guard let selection = self.controller.textView?.selectedRange,
-                let rope = self.controller.rope,
-                let textView = self.controller.textView,
-                let firstNode = rope.nodeAt(location: selection.location)else {
+              let rope = self.controller.rope,
+              let textView = self.controller.textView,
+              let firstNode = rope.nodeAt(location: selection.location)else {
             return false
         }
 
@@ -138,50 +138,46 @@ extension DocumentView {
 
         return false
     }
-    
+
     func nextSection() {
         // option down
         guard let selection = self.controller.textView?.selectedRange,
-                let rope = self.controller.rope,
-                let textView = self.controller.textView else {
+              let rope = self.controller.rope,
+              let textView = self.controller.textView else {
             return
         }
-        
-        var node: TendrilRope.Node? = rope.nodeAt(location: selection.location)
 
-        if node?.type == .user || node?.type == .system {
+        var node: TendrilRope.Node? = rope.nodeAt(location: selection.location + selection.length)
+
+        if node?.type == .userColon || node?.type == .systemColon {
             node = node?.next as? TendrilRope.Node
-            while node?.content?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
-                node = node?.next as? TendrilRope.Node
-            }
-            if let node {
-                textView.selectedRange = NSMakeRange(node.location(), 0)
-                return
-            } else {
-                return
+        } else {
+            let blockType = node?.blockType
+            node = node?.next as? TendrilRope.Node
+            while node != nil {
+                if node!.blockType != blockType {
+                    break
+                }
+                if blockType == nil &&
+                    (node!.type == .userColon || node!.type == .systemColon) {
+                    break
+                }
+                node = node!.next as? TendrilRope.Node
             }
         }
 
-        let isComment = node!.isComment
-        let blockType = node!.blockType
-        if node!.next != nil {
-            node = node!.next as? TendrilRope.Node
+        while node?.content?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
+            node = node?.next as? TendrilRope.Node
         }
-        while node!.next != nil {
-            if node!.isComment != isComment || 
-                node!.blockType != blockType ||
-                node!.type == .user ||
-                node!.type == .system ||
-                node!.type == .cache {
-                textView.selectedRange = NSMakeRange(node!.location(), 0)
-//                textView.scrollRangeToVisible(NSMakeRange(node!.location(), 0))
-                return
-            }
-            
-            node = node!.next as? TendrilRope.Node
+
+        let range: NSRange
+        if let node {
+            range = NSMakeRange(node.location(), 0)
+        } else {
+            range = NSMakeRange(rope.length - 1, 0)
         }
-        textView.selectedRange = NSMakeRange(node!.location() + node!.weight, 0)
-//        textView.scrollRangeToVisible(NSMakeRange(node!.location() + node!.weight, 0))
+        textView.scrollRangeToVisible(range)
+        textView.selectedRange = range
     }
     
     func prevSection() {

@@ -10,8 +10,8 @@ import Foundation
 class LeafNode {
     enum NodeType {
         case cache           // <CACHE/>\n, <CACHE />\n, <cache/>\n
-        case user            // user: ...\n
-        case system          // system: ...\n
+        case userColon       // user: ...\n
+        case systemColon     // system: ...\n
         case commentOpen     // <!--
         case commentClose    // -->\n
         case userBlockOpen   // ```user\n
@@ -41,18 +41,14 @@ class LeafNode {
         let wasComment = self.isComment
         let wasBlockType = self.blockType
 
-        self.isComment = self.prev?.isComment ?? false
-        self.blockType = self.prev?.blockType
+        self.isComment = self.prev?.isComment ?? false && self.prev!.type != .commentClose
+        self.blockType = self.prev?.type != .blockClose ? self.prev?.blockType : nil
 
         if self.type == .commentOpen {
             self.isComment = true
         }
         if self.isComment {
-            if self.type == .commentClose {
-                self.isComment = false
-            } else {
-                return wasComment != self.isComment || wasBlockType != self.blockType
-            }
+            return wasComment != self.isComment || wasBlockType != self.blockType
         }
 
         if self.blockType == nil {
@@ -62,8 +58,6 @@ class LeafNode {
             if self.type == .systemBlockOpen {
                 self.blockType = .system
             }
-        } else if self.type == .blockClose {
-            self.blockType = nil
         }
 
         return wasComment != self.isComment || wasBlockType != self.blockType
@@ -84,13 +78,13 @@ struct NodeParser {
             return .cache
         }
         if input.hasPrefix("user: ") {
-            return .user
+            return .userColon
         }
         if input.hasPrefix("Summary: ") {
-            return .user
+            return .userColon
         }
         if input.hasPrefix("system: ") {
-            return .system
+            return .systemColon
         }
         if input.hasPrefix("<!--") {
             return .commentOpen
@@ -104,7 +98,7 @@ struct NodeParser {
         if input.hasPrefix("```system\n") {
             return .systemBlockOpen
         }
-        if input.hasPrefix("```\n") {
+        if input.hasPrefix("```") {
             return .blockClose
         }
 

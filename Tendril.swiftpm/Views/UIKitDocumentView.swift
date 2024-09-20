@@ -125,10 +125,10 @@ extension UIKitDocumentView.Coordinator : NSTextLayoutManagerDelegate {
             if node.isComment {
                 return NSTextLayoutFragment(textElement: textElement, range: textElement.elementRange)
             }
-            if node.type == .user {
+            if node.type == .userColon {
                 return BubbleLayoutFragment(textElement: textElement, range: textElement.elementRange)
             }
-            if node.type == .system {
+            if node.type == .systemColon {
                 return BubbleLayoutFragment(textElement: textElement, range: textElement.elementRange, bubbleColor: .systemBubble)
             }
             if node.type == .cache {
@@ -150,7 +150,7 @@ extension UIKitDocumentView.Coordinator : NSTextContentStorageDelegate {
     func textContentStorage(_ textContentStorage: NSTextContentStorage, textParagraphWith range: NSRange) -> NSTextParagraph? {
         let originalText = textContentStorage.textStorage!.attributedSubstring(from: range)
         if let node = self.parent.controller.rope?.nodeAt(location: range.location) {
-            if node.type == .cache || node.type == .user || node.type == .system {
+            if node.type == .cache || node.type == .userColon || node.type == .systemColon {
                 return nil
             }
             if node.isComment || node.type != .none {
@@ -182,6 +182,14 @@ extension UIKitDocumentView.Coordinator: NSTextStorageDelegate {
 
             if let changedBlockRange = self.parent.controller.rope?.updateBlocks(in: editedRange) {
                 textStorage.edited(.editedAttributes, range: changedBlockRange, changeInLength: 0)
+            }
+
+            if textStorage.string.nsLength != self.parent.controller.rope?.length {
+                print("😭")
+            }
+
+            if textStorage.string != self.parent.controller.rope?.toString() {
+                print("🚨")
             }
         }
     }

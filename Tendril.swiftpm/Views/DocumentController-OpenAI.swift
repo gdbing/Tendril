@@ -88,7 +88,7 @@ fileprivate extension TendrilRope {
                     currentContent = ""
                 }
                 
-            case .user:
+            case .userColon:
                 if let message = self.message(content: currentContent, type: currentBlock) {
                     messages.append(message)
                 }
@@ -104,7 +104,7 @@ fileprivate extension TendrilRope {
                     messages.append(message)
                 }
                 
-            case .system:
+            case .systemColon:
                 if let message = self.message(content: currentContent, type: currentBlock) {
                     messages.append(message)
                 }
