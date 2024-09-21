@@ -175,7 +175,7 @@ extension DocumentView {
             textView.scrollRangeToVisible( NSMakeRange(node.location(), node.location() + node.weight))
             textView.selectedRange =  NSMakeRange(node.location(), 0)
         } else {
-            textView.selectedRange = NSMakeRange(rope.length - 1, 0)
+            textView.selectedRange = NSMakeRange(rope.length, 0)
         }
     }
 
