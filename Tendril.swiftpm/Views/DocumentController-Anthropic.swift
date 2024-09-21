@@ -207,33 +207,41 @@ fileprivate extension TendrilRope {
                     isCurrentCache = false
                 }
                 
-            case .user:
-                if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
-                    messages.append(message)
-                }
-                currentBlock = nil
-                currentContent = ""
-                isCurrentCache = false
-                let content: String
-                if node?.content?.hasPrefix("user:") == true {
-                    content = String(node?.content?.dropFirst("user:".count) ?? "")
+            case .userColon:
+                if currentBlock == nil {
+                    if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
+                        messages.append(message)
+                    }
+                    currentBlock = nil
+                    currentContent = ""
+                    isCurrentCache = false
+                    let content: String
+                    if node?.content?.hasPrefix("user:") == true {
+                        content = String(node?.content?.dropFirst("user:".count) ?? "")
+                    } else {
+                        content = node!.content!
+                    }
+                    if let message = self.message(content: content, type: .user, cache: false) {
+                        messages.append(message)
+                    }
                 } else {
-                    content = node!.content!
-                }
-                if let message = self.message(content: content, type: .user, cache: false) {
-                    messages.append(message)
+                    currentContent += node!.content!
                 }
                 
-            case .system:
-                if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
-                    messages.append(message)
-                }
-                currentBlock = nil
-                currentContent = ""
-                isCurrentCache = false
-                let content = node?.content?.dropFirst("system:".count) ?? ""
-                if let message = self.message(content: String(content), type: .user, cache: false) {
-                    messages.append(message)
+            case .systemColon:
+                if currentBlock == nil {
+                    if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
+                        messages.append(message)
+                    }
+                    currentBlock = nil
+                    currentContent = ""
+                    isCurrentCache = false
+                    let content = node?.content?.dropFirst("system:".count) ?? ""
+                    if let message = self.message(content: String(content), type: .user, cache: false) {
+                        messages.append(message)
+                    }
+                } else {
+                    currentContent += node!.content!
                 }
                 
             case .cache:
