@@ -179,17 +179,67 @@ extension DocumentView {
         textView.scrollRangeToVisible(range)
         textView.selectedRange = range
     }
-    
+
     func prevSection() {
         // option up
         guard let selection = self.controller.textView?.selectedRange,
-                let rope = self.controller.rope,
-                let textView = self.controller.textView else {
+              let rope = self.controller.rope,
+              let textView = self.controller.textView else {
             return
         }
 
+        func isEmpty(node: TendrilRope.Node?) -> Bool {
+            return node?.content?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true
+            || node?.type == .userBlockOpen
+            || node?.type == .systemBlockOpen
+        }
+
+        // NB. this will jump to top of the prev section if cursor is above top !empty line
+        // e.g. ```user\n(cursor)\n\nsome woooords\n\netc```
+        func topNodeOfSection(section: TendrilRope.Node?) -> TendrilRope.Node? {
+            guard section != nil else { return nil }
+
+            var node:            TendrilRope.Node? = section
+            var topNonEmptyNode: TendrilRope.Node? = !isEmpty(node: node) ? node : nil
+
+            let blockType = node?.blockType
+            
+            while node != nil, node?.blockType == blockType {
+                if blockType == nil &&
+                    (node!.type == .userColon || node!.type == .systemColon) {
+                    break
+                }
+
+                if !isEmpty(node: node) {
+                    topNonEmptyNode =  node
+                }
+                node = node!.prev as? TendrilRope.Node
+            }
+
+            return topNonEmptyNode
+        }
+
+        // Start from the current location
         var node: TendrilRope.Node? = rope.nodeAt(location: selection.location)
+        let node2 = topNodeOfSection(section: node)
 
+        if node === node2 {
+            let blockType = node!.blockType
+            while node != nil, node?.blockType == blockType {
+                node = node!.prev as? TendrilRope.Node
+            }
+            node = topNodeOfSection(section: node)
+        } else {
+            node = node2
+        }
 
+        let range: NSRange
+        if let node {
+            range = NSMakeRange(node.location(), 0)
+        } else {
+            range = NSMakeRange(0, 0)
+        }
+        textView.scrollRangeToVisible(range)
+        textView.selectedRange = range
     }
 }
