@@ -22,17 +22,12 @@ struct UIKitDocumentView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UITextView {
         self.controller.textView = textView
-        if let document {
-            let text = document.readText()
-            textView.text = text
-            controller.rope = TendrilRope(content: text)
-            controller.updateWordCount()
-            textView.becomeFirstResponder()
-        }
+
         textView.delegate = context.coordinator
         textView.isScrollEnabled = true
         textView.isEditable = true
         textView.isUserInteractionEnabled = true
+        textView.becomeFirstResponder()
 
         textView.allowsEditingTextAttributes = false
         textView.autocorrectionType = .no
@@ -57,11 +52,12 @@ struct UIKitDocumentView: UIViewRepresentable {
     func updateUIView(_ uiView: UITextView, context: Context) {
         self.controller.textView = uiView
         if let document {
-            let text = document.readText()
-            let greys = document.readGreyRanges()
-            if text != uiView.text {
+            let text = document.readTextAndGrayRanges()
+            let content = text.content
+            let greys = text.grays
+            if content != uiView.text {
                 controller.rope = TendrilRope()//content:text)
-                let attrText = NSMutableAttributedString(text, greyRanges: greys)
+                let attrText = NSMutableAttributedString(content, greyRanges: greys)
                 uiView.attributedText = attrText
                 controller.updateWordCount()
                 uiView.isEditable = true
@@ -99,8 +95,9 @@ struct UIKitDocumentView: UIViewRepresentable {
 
 
         func textViewDidChange(_ textView: UITextView) {
-            self.parent.document?.write(text: textView.text)
-            self.parent.document?.write(greyRanges: textView.attributedText.greyRanges)
+            self.parent.document?.write(content: textView.text, grayRanges: textView.attributedText.greyRanges)
+//            self.parent.document?.write(text: textView.text)
+//            self.parent.document?.write(greyRanges: textView.attributedText.greyRanges)
         }
 
         func textViewDidChangeSelection(_ textView: UITextView) {

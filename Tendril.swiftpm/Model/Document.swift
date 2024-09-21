@@ -36,6 +36,31 @@ struct Document {
         self.project.writeGreyRanges(greyRanges, document: self)
     }
         
+    // both
+
+    func readTextAndGrayRanges() -> (content: String, grays: [NSRange]) {
+        let text = self.url.readFile() ?? ""
+        if let result = DocumentParser.consume(text) {
+            return (result.content, result.authorAnnotations.first?.ranges ?? [])
+        } else {
+            return (text, self.readGreyRanges())
+        }
+    }
+
+    func write(content: String, grayRanges: [NSRange]) {
+        var result = content
+        result += "\n"
+        result += "\n---"
+        let hashAnnotation = HashAnnotation(content: content)
+        result += "\n\(hashAnnotation)"
+        let authorAnnotation = AuthorAnnotation(name: "Tendril", isHuman: false, ranges: grayRanges)
+        result += "\n\(authorAnnotation)"
+        result += "\n..."
+
+        self.url.writeFile(text: result)
+    }
+
+
     func renamed(name: String) -> Document {
         if let newURL = url.renameFile(name: name) {
             return Document(project: self.project, url: newURL)
