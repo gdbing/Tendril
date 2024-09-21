@@ -41,7 +41,8 @@ struct Document {
     func readTextAndGrayRanges() -> (content: String, grays: [NSRange]) {
         let text = self.url.readFile() ?? ""
         if let result = DocumentParser.consume(text) {
-            return (result.content, result.authorAnnotations.first?.ranges ?? [])
+            let byteRanges = result.authorAnnotations.first?.ranges.compactMap { result.content.byteRange(charRange:$0) }
+            return (result.content, byteRanges ?? [])
         } else {
             return (text, self.readGreyRanges())
         }
@@ -53,7 +54,8 @@ struct Document {
         result += "\n---"
         let hashAnnotation = HashAnnotation(content: content)
         result += "\n\(hashAnnotation)"
-        let authorAnnotation = AuthorAnnotation(name: "Tendril", isHuman: false, ranges: grayRanges)
+        let charRanges = grayRanges.compactMap { content.charRange(byteRange: $0) }
+        let authorAnnotation = AuthorAnnotation(name: "Tendril", isHuman: false, ranges: charRanges)
         result += "\n\(authorAnnotation)"
         result += "\n..."
 
