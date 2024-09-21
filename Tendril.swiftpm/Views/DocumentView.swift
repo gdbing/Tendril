@@ -147,37 +147,36 @@ extension DocumentView {
             return
         }
 
+        func isEmpty(node: TendrilRope.Node?) -> Bool {
+            return node?.content?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true
+            || node?.type == .userBlockOpen
+            || node?.type == .systemBlockOpen
+        }
+
         var node: TendrilRope.Node? = rope.nodeAt(location: selection.location + selection.length)
 
-        if node?.type == .userColon || node?.type == .systemColon {
-            node = node?.next as? TendrilRope.Node
+        let blockType = node?.blockType
+        if blockType == nil && (node!.type == .userColon || node!.type == .systemColon) {
+            node = node!.next as? TendrilRope.Node
+        } else if blockType == nil {
+            while node != nil, node?.blockType == nil, node?.type != .userColon, node?.type != .systemColon {
+                node = node!.next as? TendrilRope.Node
+            }
         } else {
-            let blockType = node?.blockType
-            node = node?.next as? TendrilRope.Node
-            while node != nil {
-                if node!.blockType != blockType {
-                    break
-                }
-                if blockType == nil &&
-                    (node!.type == .userColon || node!.type == .systemColon) {
-                    break
-                }
+            while node?.blockType != nil {
                 node = node!.next as? TendrilRope.Node
             }
         }
-
-        while node?.content?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
-            node = node?.next as? TendrilRope.Node
+        while node != nil, isEmpty(node: node) {
+            node = node!.next as? TendrilRope.Node
         }
 
-        let range: NSRange
         if let node {
-            range = NSMakeRange(node.location(), 0)
+            textView.scrollRangeToVisible( NSMakeRange(node.location(), node.location() + node.weight))
+            textView.selectedRange =  NSMakeRange(node.location(), 0)
         } else {
-            range = NSMakeRange(rope.length - 1, 0)
+            textView.selectedRange = NSMakeRange(rope.length - 1, 0)
         }
-        textView.scrollRangeToVisible(range)
-        textView.selectedRange = range
     }
 
     func prevSection() {
@@ -223,10 +222,18 @@ extension DocumentView {
         var node: TendrilRope.Node? = rope.nodeAt(location: selection.location)
         let node2 = topNodeOfSection(section: node)
 
-        if node === node2 {
-            let blockType = node!.blockType
-            while node != nil, node?.blockType == blockType {
+        if node === node2, selection.location == node?.location() {
+            let blockType = node?.blockType
+            if blockType == nil && (node!.type == .userColon || node!.type == .systemColon) {
                 node = node!.prev as? TendrilRope.Node
+            } else if blockType == nil {
+                while node != nil, node?.blockType == nil, node?.type != .userColon, node?.type != .systemColon {
+                    node = node!.prev as? TendrilRope.Node
+                }
+            } else {
+                while node?.blockType != nil {
+                    node = node!.prev as? TendrilRope.Node
+                }
             }
             node = topNodeOfSection(section: node)
         } else {
