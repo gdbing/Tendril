@@ -139,18 +139,59 @@ extension DocumentView {
         return false
     }
 
+    private func isEmpty(node: TendrilRope.Node?) -> Bool {
+        return node?.content?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true
+        || node?.type == .userBlockOpen
+        || node?.type == .systemBlockOpen
+    }
+
+    /// Returns a location roughly in the line offset by the given amount from the start of the given node
+    ///
+    /// textView.scrollRangeToVisible is busted, so to move the view to a given location we want to initially
+    /// overshoot by setting the selection to the n lines above/below the target selection point and then set
+    /// it to the actual desired selection point
+    /// - Parameters:
+    ///   - lineOffset: negative offsets are below the node, positive are above
+    ///   - node: the node to calculate the offset from
+    /// - Returns: location (in byte length) of offset
+    private func newSelectionPoint(lineOffset: Int, node: TendrilRope.Node) -> Int {
+        let startingIndex = node.location()
+        var characterOffset = 0
+        let lineLength = 80 // magic number. and not accurate
+        var remainingLines = lineOffset
+        var node: TendrilRope.Node? = node
+
+        var isBelow = false
+        if lineOffset < 0 {
+            remainingLines = -lineOffset
+            isBelow = true
+            node = node!.prev as? TendrilRope.Node
+        }
+
+        while node != nil {
+            if node!.weight <=  lineLength * remainingLines {
+                characterOffset += node!.weight
+                remainingLines -= max(node!.weight/lineLength, 1)
+                if isBelow {
+                    node = node!.prev as? TendrilRope.Node
+                } else {
+                    node = node!.next as? TendrilRope.Node
+                }
+            } else {
+                characterOffset += lineLength * remainingLines
+                break
+            }
+        }
+
+        return isBelow ? startingIndex + characterOffset : startingIndex - characterOffset
+    }
+
     func nextSection() {
         // option down
         guard let selection = self.controller.textView?.selectedRange,
               let rope = self.controller.rope,
               let textView = self.controller.textView else {
             return
-        }
-
-        func isEmpty(node: TendrilRope.Node?) -> Bool {
-            return node?.content?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true
-            || node?.type == .userBlockOpen
-            || node?.type == .systemBlockOpen
         }
 
         var node: TendrilRope.Node? = rope.nodeAt(location: selection.location + selection.length)
@@ -172,8 +213,9 @@ extension DocumentView {
         }
 
         if let node {
-            textView.scrollRangeToVisible( NSMakeRange(node.location(), node.location() + node.weight))
-            textView.selectedRange =  NSMakeRange(node.location(), 0)
+            textView.selectedRange = NSMakeRange(newSelectionPoint(lineOffset: -20, node: node), 0)
+            textView.selectedRange = NSMakeRange(newSelectionPoint(lineOffset: 6, node: node), 0)
+            textView.selectedRange = NSMakeRange(node.location(), 0)
         } else {
             textView.selectedRange = NSMakeRange(rope.length, 0)
         }
@@ -185,12 +227,6 @@ extension DocumentView {
               let rope = self.controller.rope,
               let textView = self.controller.textView else {
             return
-        }
-
-        func isEmpty(node: TendrilRope.Node?) -> Bool {
-            return node?.content?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true
-            || node?.type == .userBlockOpen
-            || node?.type == .systemBlockOpen
         }
 
         // NB. this will jump to top of the prev section if cursor is above top !empty line
@@ -240,13 +276,11 @@ extension DocumentView {
             node = node2
         }
 
-        let range: NSRange
         if let node {
-            range = NSMakeRange(node.location(), 0)
+            textView.selectedRange = NSMakeRange(newSelectionPoint(lineOffset: 6, node: node), 0)
+            textView.selectedRange = NSMakeRange(node.location(), 0)
         } else {
-            range = NSMakeRange(0, 0)
+            textView.selectedRange = NSMakeRange(0, 0)
         }
-        textView.scrollRangeToVisible(range)
-        textView.selectedRange = range
     }
 }
