@@ -341,7 +341,7 @@ class TendrilRope {
             guard !paragraphs.isEmpty else { return nil }
 
             if paragraphs.count == 1 {
-                return (Node(paragraphs.first! + "\n"), paragraphs.first!.count + 1)
+                return (Node(paragraphs.first! + "\n"), paragraphs.first!.nsLength + 1)
             }
 
             if paragraphs.count == 2 {
