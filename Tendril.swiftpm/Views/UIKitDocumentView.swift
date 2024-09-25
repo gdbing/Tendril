@@ -163,30 +163,37 @@ extension UIKitDocumentView.Coordinator : NSTextContentStorageDelegate {
     }
 }
 
+private var isEditing = false
 extension UIKitDocumentView.Coordinator: NSTextStorageDelegate {
 
-    func textStorage(_ textStorage: NSTextStorage, didProcessEditing editedMask: NSTextStorage.EditActions, range editedRange: NSRange, changeInLength delta: Int) {
+    func textStorage(_ textStorage: NSTextStorage, willProcessEditing editedMask: NSTextStorage.EditActions, range editedRange: NSRange, changeInLength delta: Int) {
         if editedMask.contains(.editedCharacters) {
+            if isEditing {
+                //TODO: this is temporary until I'm confident this won't happen
+                fatalError("double editing event!!!")
+            }
+            isEditing = true
+            defer { isEditing = false }
+
             let deletion = editedRange.length - delta
             if deletion > 0 {
                 self.parent.controller.rope?.delete(range: NSMakeRange(editedRange.location, deletion))
             }
 
             if editedRange.length > 0, let range = textStorage.string.range(from: editedRange) {
-                let input = textStorage.string[range]
-                self.parent.controller.rope?.insert(content: String(input), at: editedRange.location)
+                let input = String(textStorage.string[range])
+                if !input.isEmpty {
+                    self.parent.controller.rope?.insert(content: input, at: editedRange.location)
+                }
             }
 
             if let changedBlockRange = self.parent.controller.rope?.updateBlocks(in: editedRange) {
                 textStorage.edited(.editedAttributes, range: changedBlockRange, changeInLength: 0)
             }
 
-            if textStorage.string.nsLength != self.parent.controller.rope?.length {
-                print("😭")
-            }
-
             if textStorage.string != self.parent.controller.rope?.toString() {
-                print("🚨")
+                // TODO: this is temporary until I'm confident there's no drift
+                fatalError()
             }
         }
     }
