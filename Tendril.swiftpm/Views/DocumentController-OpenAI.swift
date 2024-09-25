@@ -22,7 +22,14 @@ extension DocumentController {
         let temperature = settings.temperature
         let model: Model = {
             switch settings.model {
-                
+            case "gpt-mini":
+                return .gpt4omini
+            case "gpt-4o":
+                return .gpt4o
+            case "gpt-4o-2024-05-13":
+                return .gpt4o20240513
+            case "gpt-4o-2024-08-06":
+                return .gpt4o20240806
             default:
                 return .gpt4o
             }

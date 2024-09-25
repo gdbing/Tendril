@@ -39,7 +39,7 @@ class DocumentController: ObservableObject {
         switch Settings().model {
         case "claude-3-opus-20240229", "claude-3-5-sonnet-20240620", "claude-3-haiku-20240307":
             streamAnthropic()
-        case "gpt-3.5-turbo", "gpt-4o", "gpt-4o-mini", "gpt-4o-2024-08-06", "gpt-4o-2024-05-13":
+        case "gpt-4o", "gpt-4o-mini", "gpt-4o-2024-08-06", "gpt-4o-2024-05-13":
             streamChatGPT()
         default:
             print("invalid model selected")
