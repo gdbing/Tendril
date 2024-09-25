@@ -195,6 +195,7 @@ extension DocumentView {
         }
 
         var node: TendrilRope.Node? = rope.nodeAt(location: selection.location + selection.length)
+        guard node != nil else { return }
 
         let blockType = node?.blockType
         if blockType == nil && (node!.type == .userColon || node!.type == .systemColon) {
