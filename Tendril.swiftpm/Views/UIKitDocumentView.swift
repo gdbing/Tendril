@@ -34,7 +34,7 @@ struct UIKitDocumentView: UIViewRepresentable {
         textView.spellCheckingType = .no
         textView.smartInsertDeleteType = .no
         textView.smartDashesType = .no
-        textView.smartQuotesType = .no
+//        textView.smartQuotesType = .no
 
         textView.scrollsToTop = true
         textView.backgroundColor = UIColor.systemBackground
