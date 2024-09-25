@@ -3,7 +3,7 @@ import SwiftUI
 struct UIKitDocumentView: UIViewRepresentable {
     var controller: DocumentController
 
-    @State private var textView = UITextView()
+    @State private var textView: UITextView
     @Binding var document: Document?
 
     @ScaledMetric(relativeTo: .body) var maxWidth = 680
@@ -17,7 +17,7 @@ struct UIKitDocumentView: UIViewRepresentable {
         textContentStorage.addTextLayoutManager(textLayoutManager)
         let textContainer = NSTextContainer()
         textLayoutManager.textContainer = textContainer
-        self.textView = UITextView(frame: CGRect(x: 0, y: 20, width: 300, height: 0), textContainer: textContainer)
+        self.textView = UITextView(frame: CGRect(x: 0, y: 20, width: 680, height: 0), textContainer: textContainer)
     }
 
     func makeUIView(context: Context) -> UITextView {

@@ -165,12 +165,11 @@ class TendrilRope {
             self.balance()
         }
 
-        private func bubbleUp(_ addedWeight: Int) {
-            self.weight += addedWeight
-
+        private func bubbleUp(_ weight: Int) {
             if self.parent?.left === self {
-                self.parent!.bubbleUp(addedWeight)
+                self.parent!.weight += weight
             }
+            self.parent?.bubbleUp(weight)
         }
 
         func delete(range: NSRange) -> Node? {
@@ -193,7 +192,9 @@ class TendrilRope {
                     if let next = self.next {
                         next.prev = self.prev
                         self.prev?.next = next
+                        self.bubbleUp(-location)
                         (next as! Node).content = prefix + (next as! Node).content!
+                        (next as! Node).weight += location
                         (next as! Node).bubbleUp(location)
                         return nil
                     } else {
@@ -220,8 +221,10 @@ class TendrilRope {
             }
 
             if location < weight {
-                self.left = self.left?.delete(location: location, length: min(length, weight - location))
-                self.weight -= min(length, weight - location)
+                let length = min(length, weight - location) // length if deleting only from left node
+                                                            // weight - location if also deleting right node
+                self.left = self.left?.delete(location: location, length: length)
+                self.weight -= length
             }
 
             if self.left == nil {
@@ -335,8 +338,8 @@ class TendrilRope {
             self.left = left!.left
         }
 
-        /// Take advantage of the fact that text nodes are already ordered
-        /// almost 100x as fast as naively inserting each paragraph of moby dick
+        /// Take advantage of the fact that text nodes are already ordered.
+        /// Almost 100x as fast as naively inserting each paragraph of Moby Dick
         static func parse<C: Collection>(paragraphs: C) -> (node: Node, weight: Int)? where C.Element == String {
             guard !paragraphs.isEmpty else { return nil }
 
