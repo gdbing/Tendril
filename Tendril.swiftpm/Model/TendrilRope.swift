@@ -338,21 +338,21 @@ class TendrilRope {
             self.left = left!.left
         }
 
-        /// Take advantage of the fact that text nodes are already ordered.
-        /// Almost 100x as fast as naively inserting each paragraph of Moby Dick
+        /// Take advantage of the fact that text nodes are already ordered
+        /// almost 100x as fast as naively inserting each paragraph of moby dick
         static func parse<C: Collection>(paragraphs: C) -> (node: Node, weight: Int)? where C.Element == String {
             guard !paragraphs.isEmpty else { return nil }
 
             if paragraphs.count == 1 {
-                return (Node(paragraphs.first! + "\n"), paragraphs.first!.nsLength + 1)
+                return (Node(paragraphs.first!), paragraphs.first!.nsLength)
             }
 
             if paragraphs.count == 2 {
                 let node = Node()
-                node.weight = paragraphs.first!.nsLength + 1
-                node.left = Node(paragraphs.first! + "\n")
+                node.weight = paragraphs.first!.nsLength
+                node.left = Node(paragraphs.first!)
                 let secondIndex = paragraphs.index(after: paragraphs.startIndex)
-                node.right = Node(paragraphs[secondIndex] + "\n")
+                node.right = Node(paragraphs[secondIndex])
                 return (node, node.weight + node.right!.weight)
             }
 
@@ -388,8 +388,7 @@ class TendrilRope {
             self.balance()
         }
     }
-    
-    private let queue = DispatchQueue(label: "com.tendrilRope.synchronousQueue")
+
     var root: Node = Node("")
 
     init() { }
@@ -397,21 +396,10 @@ class TendrilRope {
     init(content: String) {
         guard !content.isEmpty else { return }
 
-        let paragraphs = content.components(separatedBy: .newlines)
-
-        var lastParagraph: String?
-        if content.last != "\n" {
-            lastParagraph = paragraphs.last
-        }
-
-        if let (root, weight) = Node.parse(paragraphs: paragraphs.dropLast()) {
+        if let (root, weight) = Node.parse(paragraphs: content.splitIntoLines()) {
             let _ = root.link()
             self.root = root
-            if let lastParagraph {
-                self.root.insert(content: lastParagraph, at: weight, hasTrailingNewline: false)
-            }
-        } else if let lastParagraph {
-            self.root.insert(content: lastParagraph, at: 0, hasTrailingNewline: false)
+            self.length = weight
         }
 
         self.updateBlocks()
@@ -436,49 +424,61 @@ class TendrilRope {
     var length: Int = 0
 
     func nodeAt(location: Int) -> Node? {
-        queue.sync {
-            if let node = self.root.nodeAt(offset: location) {
-                return node
-            } else if location == length {
-                return tail
-            } else {
-                return nil
-            }
+        if let node = self.root.nodeAt(offset: location) {
+            return node
+        } else if location == length {
+            return tail
+        } else {
+            return nil
         }
     }
 
     func insert(content: String, at offset: Int) {
-        queue.sync {
-            guard content.count > 0 else {
-                print("ERROR: ParagraphRope insert \"\"")
-                return
-            }
-            var relativeOffset = offset
-            var remainder: any StringProtocol = content
-            var idx = remainder.startIndex
-            while idx != remainder.endIndex {
-                var hasTrailingNewline = true
-                if let newLineIdx = remainder.firstIndex(of: "\n") {
-                    idx = remainder.index(newLineIdx, offsetBy: 1)
-                } else {
-                    idx = remainder.endIndex
-                    hasTrailingNewline = false
-                }
-                let s = String(remainder.prefix(upTo: idx))
-                self.root.insert(content: s, at: relativeOffset, hasTrailingNewline: hasTrailingNewline)
-                remainder = remainder.suffix(from: idx)
-                relativeOffset += s.nsLength
-            }
-
-            self.length += content.nsLength
+        let insertLength = content.nsLength
+        guard insertLength > 0 else {
+            fatalError("ERROR: ParagraphRope insert \"\"")
         }
+        if insertLength > self.length * 10 {
+            let str = self.toString()
+            let idx = str.charIndex(byteIndex: offset)!
+            let prefix = str.prefix(upTo: idx)
+            let suffix = str.suffix(from: idx)
+
+            let combinedContent = String(prefix + content + suffix)
+
+            if let (root, weight) = Node.parse(paragraphs: combinedContent.splitIntoLines()) {
+                let _ = root.link()
+                self.root = root
+                self.length = weight
+            }
+            self.updateBlocks()
+            return
+        }
+
+        var relativeOffset = offset
+        var remainder: any StringProtocol = content
+        var idx = remainder.startIndex
+        while idx != remainder.endIndex {
+            var hasTrailingNewline = true
+            if let newLineIdx = remainder.firstIndex(of: "\n") {
+                idx = remainder.index(newLineIdx, offsetBy: 1)
+            } else {
+                idx = remainder.endIndex
+                hasTrailingNewline = false
+            }
+            let s = String(remainder.prefix(upTo: idx))
+            self.root.insert(content: s, at: relativeOffset, hasTrailingNewline: hasTrailingNewline)
+            remainder = remainder.suffix(from: idx)
+            relativeOffset += s.nsLength
+        }
+
+        self.length += content.nsLength
+
     }
 
     func delete(range: NSRange) {
-        queue.sync {
-            self.root = self.root.delete(range: range) ?? Node("")
-            self.length -= range.length
-        }
+        self.root = self.root.delete(range: range) ?? Node("")
+        self.length -= range.length
     }
 
     func toString() -> String {
@@ -486,41 +486,37 @@ class TendrilRope {
     }
 
     func updateBlocks() {
-        queue.sync {
-            var node = self.head
-            while node != nil {
-                let _ = node!.updateBlock()
-                node = node!.next as? Node
-            }
+        var node = self.head
+        while node != nil {
+            let _ = node!.updateBlock()
+            node = node!.next as? Node
         }
     }
 
     func updateBlocks(in range: NSRange) -> NSRange? {
-        queue.sync {
-            guard let nodeWithRemainder = self.root.nodeWithRemainderAt(offset: range.location) else { return nil }
-            var node: Node? = nodeWithRemainder.node
+        guard let nodeWithRemainder = self.root.nodeWithRemainderAt(offset: range.location) else { return nil }
+        var node: Node? = nodeWithRemainder.node
 
-            var isChanged = false
-            var loc = range.location - nodeWithRemainder.remainder
-            var offset = loc
+        var isChanged = false
+        var loc = range.location - nodeWithRemainder.remainder
+        var offset = loc
 
-            while node != nil && offset < range.upperBound {
-                isChanged = node!.updateBlock() || isChanged
-                if !isChanged {
-                    loc += node!.weight
-                }
-
-                offset += node!.weight
-                node = node!.next as? Node
+        while node != nil && offset < range.upperBound {
+            isChanged = node!.updateBlock() || isChanged
+            if !isChanged {
+                loc += node!.weight
             }
 
-            while node?.updateBlock() == true {
-                isChanged = true
-                offset += node!.weight
-                node = node!.next as? Node
-            }
-
-            return isChanged ? NSMakeRange(loc, offset - loc) : nil
+            offset += node!.weight
+            node = node!.next as? Node
         }
+
+        while node?.updateBlock() == true {
+            isChanged = true
+            offset += node!.weight
+            node = node!.next as? Node
+        }
+
+        return isChanged ? NSMakeRange(loc, offset - loc) : nil
     }
 }

@@ -14,11 +14,12 @@ struct DocumentView: View {
                 if let newValue, let textView = self.controller.textView {
                     let text = newValue.readTextAndGrayRanges()
                     let content = text.content
-                    self.controller.rope = TendrilRope(content: content)
+                    self.controller.rope = nil
                     let greys = text.grays
                     let attrText = NSMutableAttributedString(content, greyRanges: greys)
                     textView.attributedText = attrText
                     controller.updateWordCount()
+                    self.controller.rope = TendrilRope(content: content)
                     let topOffset = CGPoint(x: 0, y: 0)
                     textView.setContentOffset(topOffset, animated: false)
                 } else {

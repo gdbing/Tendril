@@ -91,3 +91,19 @@ extension String {
         (self as NSString).length
     }
 }
+
+extension String {
+    public func splitIntoLines() -> [String] {
+        var lines: [String] = []
+        let wholeString = self.startIndex..<self.endIndex
+        self.enumerateSubstrings(in: wholeString, options: .byLines) {
+            (substring, range, enclosingRange, stopPointer) in
+            if let _ = substring {
+                let line = self[enclosingRange]
+                lines.append(String(line))
+            }
+        }
+        return lines
+    }
+}
+
