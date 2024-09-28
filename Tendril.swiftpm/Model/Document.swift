@@ -3,13 +3,15 @@ import SwiftUI
 struct Document {
     private var url: URL
     private let project: Project
-    
+    private let debouncer: Debouncer
+
     var name: String
     
     init(project: Project, url: URL) {
         self.project = project
         self.url = url
         self.name = url.lastPathComponent
+        debouncer = Debouncer(delay: 5)
     }
     
     func delete() throws {
@@ -49,17 +51,19 @@ struct Document {
     }
 
     func write(content: String, grayRanges: [NSRange]) {
-        var result = content
-        result += "\n"
-        result += "\n---"
-        let hashAnnotation = HashAnnotation(content: content)
-        result += "\n\(hashAnnotation)"
-        let charRanges = grayRanges.compactMap { content.charRange(byteRange: $0) }
-        let authorAnnotation = AuthorAnnotation(name: "Tendril", isHuman: false, ranges: charRanges)
-        result += "\n\(authorAnnotation)"
-        result += "\n..."
+        debouncer.debounce {
+            var result = content
+            result += "\n"
+            result += "\n---"
+            let hashAnnotation = HashAnnotation(content: content)
+            result += "\n\(hashAnnotation)"
+            let charRanges = grayRanges.compactMap { content.charRange(byteRange: $0) }
+            let authorAnnotation = AuthorAnnotation(name: "Tendril", isHuman: false, ranges: charRanges)
+            result += "\n\(authorAnnotation)"
+            result += "\n..."
 
-        self.url.writeFile(text: result)
+            self.url.writeFile(text: result)
+        }
     }
 
 
@@ -71,8 +75,42 @@ struct Document {
     }
 }
 
-extension Document: Equatable, Hashable {
+extension Document: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         return lhs.url == rhs.url
+    }
+}
+
+extension Document: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(url)
+    }
+}
+
+class Debouncer {
+    private let queue: DispatchQueue
+    private let delay: TimeInterval
+    private var workItem: DispatchWorkItem = DispatchWorkItem(block: {})
+    private var isWaiting: Bool = false
+
+    init(delay: TimeInterval, queue: DispatchQueue = .main) {
+        self.delay = delay
+        self.queue = queue
+    }
+
+    func debounce(action: @escaping () -> Void) {
+        if !isWaiting {
+            action()
+            workItem = DispatchWorkItem(block: { self.isWaiting = false })
+            queue.asyncAfter(deadline: .now() + delay, execute: workItem)
+            self.isWaiting = true
+        } else {
+            // Cancel the previous work item
+            workItem.cancel()
+            workItem = DispatchWorkItem(block: {
+                action()
+                self.isWaiting = false
+            })
+        }
     }
 }
