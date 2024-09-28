@@ -50,23 +50,9 @@ struct UIKitDocumentView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UITextView, context: Context) {
-        self.controller.textView = uiView
-        if let document {
-            let text = document.readTextAndGrayRanges()
-            let content = text.content
-            let greys = text.grays
-            if content != uiView.text {
-                controller.rope = TendrilRope()//content:text)
-                let attrText = NSMutableAttributedString(content, greyRanges: greys)
-                uiView.attributedText = attrText
-                controller.updateWordCount()
-                uiView.isEditable = true
-                let topOffset = CGPoint(x: 0, y: 0)
-                uiView.setContentOffset(topOffset, animated: false)
-            }
+        if document != nil {
+            uiView.isEditable = true
         } else {
-            uiView.text = ""
-            controller.rope = nil
             uiView.isEditable = false
         }
     }
@@ -96,8 +82,6 @@ struct UIKitDocumentView: UIViewRepresentable {
 
         func textViewDidChange(_ textView: UITextView) {
             self.parent.document?.write(content: textView.text, grayRanges: textView.attributedText.greyRanges)
-//            self.parent.document?.write(text: textView.text)
-//            self.parent.document?.write(greyRanges: textView.attributedText.greyRanges)
         }
 
         func textViewDidChangeSelection(_ textView: UITextView) {
@@ -189,11 +173,6 @@ extension UIKitDocumentView.Coordinator: NSTextStorageDelegate {
 
             if let changedBlockRange = self.parent.controller.rope?.updateBlocks(in: editedRange) {
                 textStorage.edited(.editedAttributes, range: changedBlockRange, changeInLength: 0)
-            }
-
-            if textStorage.string != self.parent.controller.rope?.toString() {
-                // TODO: this is temporary until I'm confident there's no drift
-                fatalError()
             }
         }
     }

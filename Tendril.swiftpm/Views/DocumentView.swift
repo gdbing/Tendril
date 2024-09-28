@@ -10,6 +10,22 @@ struct DocumentView: View {
         ZStack(alignment: .topTrailing) {
             UIKitDocumentView(controller: controller, 
                               document: $document)
+            .onChange(of: document, perform: { newValue in
+                if let newValue, let textView = self.controller.textView {
+                    let text = newValue.readTextAndGrayRanges()
+                    let content = text.content
+                    self.controller.rope = TendrilRope(content: content)
+                    let greys = text.grays
+                    let attrText = NSMutableAttributedString(content, greyRanges: greys)
+                    textView.attributedText = attrText
+                    controller.updateWordCount()
+                    let topOffset = CGPoint(x: 0, y: 0)
+                    textView.setContentOffset(topOffset, animated: false)
+                } else {
+                    self.controller.rope = nil
+                    self.controller.textView?.text = ""
+                }
+            })
                 .toolbar {
                     ToolbarItem {
                         ZStack {
