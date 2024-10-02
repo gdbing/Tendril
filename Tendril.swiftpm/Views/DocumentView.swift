@@ -42,6 +42,11 @@ struct DocumentView: View {
                                 self.commentSelection()
                             }
                             .keyboardShortcut(.init("/"), modifiers: [.command])
+                            Button("reload Rope") {
+                                self.controller.rope = TendrilRope(content: controller.textView?.text ?? "")
+                                controller.textView?.textStorage.edited(.editedAttributes, range: controller.textView!.selectedRange, changeInLength: 0)
+                            }
+                            .keyboardShortcut(.init("r"), modifiers: [.command])
                         }.hidden()
                     }
                     ToolbarItem(placement: .primaryAction) {
