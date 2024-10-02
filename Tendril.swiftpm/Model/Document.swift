@@ -11,7 +11,7 @@ struct Document {
         self.project = project
         self.url = url
         self.name = url.lastPathComponent
-        debouncer = Debouncer(delay: 5)
+        self.debouncer = Debouncer(delay: 3)
     }
     
     func delete() throws {
@@ -88,10 +88,9 @@ extension Document: Hashable {
 }
 
 class Debouncer {
-    private let queue: DispatchQueue
     private let delay: TimeInterval
-    private var workItem: DispatchWorkItem = DispatchWorkItem(block: {})
-    private var isWaiting: Bool = false
+    private let queue: DispatchQueue
+    private var workItem: DispatchWorkItem?
 
     init(delay: TimeInterval, queue: DispatchQueue = .main) {
         self.delay = delay
@@ -99,18 +98,14 @@ class Debouncer {
     }
 
     func debounce(action: @escaping () -> Void) {
-        if !isWaiting {
+        workItem?.cancel()
+
+        workItem = DispatchWorkItem {
             action()
-            workItem = DispatchWorkItem(block: { self.isWaiting = false })
+        }
+
+        if let workItem = workItem {
             queue.asyncAfter(deadline: .now() + delay, execute: workItem)
-            self.isWaiting = true
-        } else {
-            // Cancel the previous work item
-            workItem.cancel()
-            workItem = DispatchWorkItem(block: {
-                action()
-                self.isWaiting = false
-            })
         }
     }
 }
