@@ -10,7 +10,7 @@ import CoreGraphics
 
 class BubbleLayoutFragment: NSTextLayoutFragment {
     override var leadingPadding: CGFloat { return 0 }
-    override var trailingPadding: CGFloat { return 60 }
+    override var trailingPadding: CGFloat { return 0 }
     override var topMargin: CGFloat { return 0 }
     override var bottomMargin: CGFloat { return 0 }
 
