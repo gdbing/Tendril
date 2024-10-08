@@ -29,8 +29,8 @@ class DocumentController: ObservableObject {
     }
     
     var textView: UITextView?
-    
-    func gptIfy() {
+
+    func gptIfy(cache: Bool = false) {
         cacheTokenRead = 0
         cacheTokenWrite = 0
         tokenInput = 0
@@ -38,7 +38,7 @@ class DocumentController: ObservableObject {
         
         switch Settings().model {
         case "claude-3-opus-20240229", "claude-3-5-sonnet-20240620", "claude-3-haiku-20240307":
-            streamAnthropic()
+            streamAnthropic(cache: cache)
         case "gpt-4o", "gpt-4o-mini", "gpt-4o-2024-08-06", "gpt-4o-2024-05-13":
             streamChatGPT()
         default:
@@ -46,17 +46,17 @@ class DocumentController: ObservableObject {
         }
     }
     
-    func streamAnthropic() {
+    func streamAnthropic(cache: Bool = false) {
         guard !self.isWriting, let textView else { return }
         
         guard let precedingText = textView.precedingText() else { return } // get text before selection
         var anthropicMessages: [MessageParameter.Message]
         if precedingText == rope?.toString() {
-            anthropicMessages = self.rope?.toAnthropicMessages() ?? []
+            anthropicMessages = self.rope?.toAnthropicMessages(autoCache: cache) ?? []
         } else {
             let precedingRope = TendrilRope(content: precedingText)
             precedingRope.updateBlocks()
-            anthropicMessages = precedingRope.toAnthropicMessages()
+            anthropicMessages = precedingRope.toAnthropicMessages(autoCache: cache)
         }
         guard !anthropicMessages.isEmpty else { return }
         
@@ -172,13 +172,13 @@ class DocumentController: ObservableObject {
 }
 
 fileprivate extension TendrilRope {
-    func toAnthropicMessages() -> [MessageParameter.Message] {
-        var messages: [MessageParameter.Message] = []
+    func toAnthropicMessages(autoCache: Bool = false) -> [MessageParameter.Message] {
+        var messages: [(content: String, type: LeafNode.BlockType?, cache: Bool)] = []
         var node: Node? = self.head
         var currentBlock: LeafNode.BlockType? = nil
         var currentContent: String = ""
         var isCurrentCache = false
-        
+
         while node != nil {
             guard !node!.isComment else {
                 node = node!.next as? Node
@@ -189,9 +189,7 @@ fileprivate extension TendrilRope {
                 
             case .userBlockOpen, .systemBlockOpen:
                 if currentBlock == nil {
-                    if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
-                        messages.append(message)
-                    }
+                    messages.append((currentContent, currentBlock, isCurrentCache))
                     currentBlock = node!.blockType
                     currentContent = ""
                     isCurrentCache = false
@@ -199,9 +197,7 @@ fileprivate extension TendrilRope {
                 
             case .blockClose:
                 if currentBlock != nil {
-                    if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
-                        messages.append(message)
-                    }
+                    messages.append((currentContent, currentBlock, isCurrentCache))
                     currentBlock = nil
                     currentContent = ""
                     isCurrentCache = false
@@ -209,9 +205,7 @@ fileprivate extension TendrilRope {
                 
             case .userColon:
                 if currentBlock == nil {
-                    if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
-                        messages.append(message)
-                    }
+                    messages.append((currentContent, currentBlock, isCurrentCache))
                     currentBlock = nil
                     currentContent = ""
                     isCurrentCache = false
@@ -221,32 +215,26 @@ fileprivate extension TendrilRope {
                     } else {
                         content = node!.content!
                     }
-                    if let message = self.message(content: content, type: .user, cache: false) {
-                        messages.append(message)
-                    }
+                    messages.append((content, .user, false))
                 } else {
                     currentContent += node!.content!
                 }
                 
             case .systemColon:
                 if currentBlock == nil {
-                    if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
-                        messages.append(message)
-                    }
+                    messages.append((currentContent, currentBlock, isCurrentCache))
                     currentBlock = nil
                     currentContent = ""
                     isCurrentCache = false
                     let content = node?.content?.dropFirst("system:".count) ?? ""
-                    if let message = self.message(content: String(content), type: .user, cache: false) {
-                        messages.append(message)
-                    }
+                    messages.append((String(content), .user, false))
                 } else {
                     currentContent += node!.content!
                 }
                 
             case .cache:
                 isCurrentCache = true
-                
+
             case .commentOpen, .commentClose:
                 break
 
@@ -258,12 +246,30 @@ fileprivate extension TendrilRope {
         }
         
         if !currentContent.isEmpty {
-            if let message = self.message(content: currentContent, type: currentBlock, cache: isCurrentCache) {
-                messages.append(message)
+            messages.append((currentContent, currentBlock, isCurrentCache))
+        }
+
+        var cacheCount = 0
+        for idx in stride(from: messages.count - 1, through: 0, by: -1) {
+            if messages[idx].cache {
+                if cacheCount == 5 {
+                    messages[idx].cache = false
+                } else {
+                    cacheCount += 1
+                }
             }
         }
-        
-        return messages
+        if cacheCount < 4 && autoCache {
+            for idx in stride(from: messages.count - 1, through: 0, by: -1) {
+                guard cacheCount < 5 else { break }
+                if !messages[idx].cache {
+                    messages[idx].cache = true
+                    cacheCount += 1
+                }
+            }
+        }
+
+        return messages.compactMap { message(content: $0.content, type: $0.type, cache: $0.cache) }
     }
     
     private func message(content: String, type: LeafNode.BlockType?, cache: Bool) -> MessageParameter.Message? {

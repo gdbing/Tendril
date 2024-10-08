@@ -5,6 +5,7 @@ struct DocumentView: View {
     @State private var showAlert = false
     @Binding var document: Document?
     @EnvironmentObject private var settings: Settings
+    @State var cacheToggle: Bool = false
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -51,12 +52,15 @@ struct DocumentView: View {
                     }
                     ToolbarItem(placement: .primaryAction) {
                         Button(action: {
-                            controller.gptIfy()
+                            controller.gptIfy(cache: cacheToggle)
                         }, label: {
                             Image(systemName: "bubble.left.fill")
                         })
                         .keyboardShortcut(.return, modifiers: [.command])
                         .disabled(controller.isWriting)
+                    }
+                    ToolbarItem(placement: .automatic) {
+                        Toggle("Cache", isOn: $cacheToggle)
                     }
                 }
             if let wordCount = controller.wordCount {
