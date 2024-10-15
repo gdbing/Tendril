@@ -262,7 +262,7 @@ fileprivate extension TendrilRope {
         if cacheCount < 4 && autoCache {
             for idx in stride(from: messages.count - 1, through: 0, by: -1) {
                 guard cacheCount < 4 else { break }
-                if !messages[idx].cache {
+                if !messages[idx].cache && messages[idx].type == .user {
                     messages[idx].cache = true
                     cacheCount += 1
                 }
