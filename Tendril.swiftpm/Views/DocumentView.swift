@@ -123,7 +123,7 @@ extension DocumentView {
         textView.selectedRange = NSMakeRange(aboveNewline, 0)
         textView.insertText("<!--\n")
         
-        let newLocation = aboveNewline + "<!--\n".nsLength
+        let newLocation = aboveNewline + "<!--\n".utf16Length
         textView.selectedRange = NSMakeRange(newLocation, length)
     }
     
@@ -148,7 +148,7 @@ extension DocumentView {
 
             let openNodeLocation = openNode.location()
             let openNodeWeight = openNode.weight
-            let selectionLength = (closeNode != nil ? closeNode!.location() - 1 : textView.text.nsLength) - (openNodeLocation + openNodeWeight)
+            let selectionLength = (closeNode != nil ? closeNode!.location() - 1 : textView.text.utf16Length) - (openNodeLocation + openNodeWeight)
             if let closeNode {
                 let closeNodeSelection = NSMakeRange(closeNode.location(), closeNode.weight)
                 textView.selectedRange = closeNodeSelection

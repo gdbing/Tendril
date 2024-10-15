@@ -1,10 +1,10 @@
 import Foundation
 
 extension String {
-    func range(from nsRange: NSRange) -> Range<String.Index>? {
+    func range(from utf16Range: NSRange) -> Range<String.Index>? {
         guard
-            let from16 = utf16.index(utf16.startIndex, offsetBy: nsRange.location, limitedBy: utf16.endIndex),
-            let to16 = utf16.index(from16, offsetBy: nsRange.length, limitedBy: utf16.endIndex),
+            let from16 = utf16.index(utf16.startIndex, offsetBy: utf16Range.location, limitedBy: utf16.endIndex),
+            let to16 = utf16.index(from16, offsetBy: utf16Range.length, limitedBy: utf16.endIndex),
             let from = String.Index(from16, within: self),
             let to = String.Index(to16, within: self)
             else { return nil }
@@ -12,7 +12,7 @@ extension String {
         return from ..< to
     }
 
-    func nsRange(from range: Range<String.Index>) -> NSRange? {
+    func utf16Range(from range: Range<String.Index>) -> NSRange? {
         guard 
             let from = range.lowerBound.samePosition(in: utf16),
             let to = range.upperBound.samePosition(in: utf16)
@@ -22,34 +22,33 @@ extension String {
                        length: utf16.distance(from: from, to: to))
     }
 
-    func byteRange(charRange: NSRange) -> NSRange? {
+    func utf16Range(charRange: NSRange) -> NSRange? {
         guard charRange.upperBound <= count else { return nil }
         
         let lowerBound = index(startIndex, offsetBy: charRange.lowerBound)
         let upperBound = index(startIndex, offsetBy: charRange.upperBound)
-        let siRange: Range<String.Index> = lowerBound ..< upperBound
-        return nsRange(from: siRange)
+        let indexRange: Range<String.Index> = lowerBound ..< upperBound
+        return utf16Range(from: indexRange)
     }
 
-    func charRange(byteRange: NSRange) -> NSRange? {
-        guard let siRange: Range<String.Index> = range(from: byteRange) else {
-            return nil
-        }
-        let location = distance(from: startIndex, to: siRange.lowerBound)
-        let length = distance(from: siRange.lowerBound, to: siRange.upperBound)
+    func charRange(utf16Range: NSRange) -> NSRange? {
+        guard let indexRange = Range(utf16Range, in: self) else { return nil }
+
+        let location = indexRange.lowerBound.utf16Offset(in: self)
+        let length   = indexRange.upperBound.utf16Offset(in: self) - location
+
         return NSRange(location: location, length: length)
     }
 
-    public func charIndex(byteIndex: Int) -> String.Index? {
-        guard let index16 = utf16.index(utf16.startIndex, offsetBy: byteIndex, limitedBy: utf16.endIndex)
+    public func charIndex(utf16Index: Int) -> String.Index? {
+        guard let idx = utf16.index(utf16.startIndex, offsetBy: utf16Index, limitedBy: utf16.endIndex)
         else { return nil }
 
-        return String.Index(index16, within: self)
+        return String.Index(idx, within: self)
     }
 
-    public func byteIndex(charIndex: String.Index) -> Int? {
-        guard
-            let from = charIndex.samePosition(in: utf16)
+    public func utf16Index(charIndex: String.Index) -> Int? {
+        guard let from = charIndex.samePosition(in: utf16)
         else { return nil }
 
         return utf16.distance(from: utf16.startIndex, to: from)
@@ -87,7 +86,7 @@ extension String {
 //        return self.index(self.startIndex, offsetBy: distance)
 //    }
 
-    var nsLength: Int {
+    var utf16Length: Int {
         (self as NSString).length
     }
 }

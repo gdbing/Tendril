@@ -45,7 +45,7 @@ class TendrilRope {
         override init() { }
         init(_ content: String) {
             self.content = content
-            self.weight = content.nsLength
+            self.weight = content.utf16Length
             self.hasTrailingNewline = content.last == "\n"
 
             super.init()
@@ -78,14 +78,14 @@ class TendrilRope {
         func insert(content: String, at offset: Int, hasTrailingNewline: Bool) {
             if offset == self.weight, !self.hasTrailingNewline
             {
-                self.weight += content.nsLength
+                self.weight += content.utf16Length
                 self.content! += content
                 self.hasTrailingNewline = hasTrailingNewline
             }
             else if offset == 0
             {
                 if let left {
-                    weight += content.nsLength
+                    weight += content.utf16Length
                     left.insert(content: content, at: 0, hasTrailingNewline: hasTrailingNewline)
                 } else {
                     if hasTrailingNewline {
@@ -98,37 +98,37 @@ class TendrilRope {
                         self.next?.prev = self.right
                         self.right!.content = self.content
 
-                        self.left!.weight = content.nsLength
+                        self.left!.weight = content.utf16Length
                         self.left!.next = self.right
                         self.left!.prev = self.prev
                         self.prev?.next = self.left
                         self.left!.content = content
 
                         self.leafToBranch()
-                        self.weight = content.nsLength
+                        self.weight = content.utf16Length
                     } else {
                         self.content = content + self.content!
-                        self.weight = content.nsLength + self.weight
+                        self.weight = content.utf16Length + self.weight
                     }
                 }
             }
             else if offset < weight
             {
                 if let left {
-                    self.weight += content.nsLength
+                    self.weight += content.utf16Length
                     left.insert(content: content, at: offset, hasTrailingNewline: hasTrailingNewline)
                 } else {
-                    let offsetIndex = self.content!.charIndex(byteIndex: offset)!
+                    let offsetIndex = self.content!.charIndex(utf16Index: offset)!
                     if hasTrailingNewline {
                         let subString1 = self.content!.prefix(upTo: offsetIndex)
                         let subString2 = self.content!.suffix(from: offsetIndex)
                         self.content = subString1 + content
-                        self.weight = self.content!.nsLength
+                        self.weight = self.content!.utf16Length
                         let hadTrailingNewline = self.hasTrailingNewline
                         self.hasTrailingNewline = true
                         self.insert(content: String(subString2), at: self.weight, hasTrailingNewline: hadTrailingNewline)
                     } else {
-                        self.weight += content.nsLength
+                        self.weight += content.utf16Length
                         self.content!.insert(contentsOf: content, at: offsetIndex)
                     }
                 }
@@ -151,7 +151,7 @@ class TendrilRope {
                     self.left!.isComment = self.isComment
 
                     self.right!.content = content
-                    self.right!.weight = content.nsLength
+                    self.right!.weight = content.utf16Length
                     self.right!.prev = self.left
                     self.right!.next = self.next
                     self.next?.prev = self.right
@@ -180,13 +180,13 @@ class TendrilRope {
             guard length > 0 else { return self }
 
             if let content = self.content {
-                let prefixIndex = content.charIndex(byteIndex: location)
+                let prefixIndex = content.charIndex(utf16Index: location)
                 let prefix = content.prefix(upTo: prefixIndex ?? content.startIndex)
-                let suffixIndex = content.charIndex(byteIndex: location + length)
+                let suffixIndex = content.charIndex(utf16Index: location + length)
                 let suffix = content.suffix(from: suffixIndex ?? content.endIndex)
                 if !suffix.isEmpty {
                     self.content = String(prefix + suffix)
-                    self.weight = self.content!.nsLength
+                    self.weight = self.content!.utf16Length
                     return self
                 } else if !prefix.isEmpty {
                     if let next = self.next {
@@ -344,12 +344,12 @@ class TendrilRope {
             guard !paragraphs.isEmpty else { return nil }
 
             if paragraphs.count == 1 {
-                return (Node(paragraphs.first!), paragraphs.first!.nsLength)
+                return (Node(paragraphs.first!), paragraphs.first!.utf16Length)
             }
 
             if paragraphs.count == 2 {
                 let node = Node()
-                node.weight = paragraphs.first!.nsLength
+                node.weight = paragraphs.first!.utf16Length
                 node.left = Node(paragraphs.first!)
                 let secondIndex = paragraphs.index(after: paragraphs.startIndex)
                 node.right = Node(paragraphs[secondIndex])
@@ -434,13 +434,13 @@ class TendrilRope {
     }
 
     func insert(content: String, at offset: Int) {
-        let insertLength = content.nsLength
+        let insertLength = content.utf16Length
         guard insertLength > 0 else {
             fatalError("ERROR: ParagraphRope insert \"\"")
         }
         if insertLength > self.length * 10 {
             let str = self.toString()
-            let idx = str.charIndex(byteIndex: offset)!
+            let idx = str.charIndex(utf16Index: offset)!
             let prefix = str.prefix(upTo: idx)
             let suffix = str.suffix(from: idx)
 
@@ -469,10 +469,10 @@ class TendrilRope {
             let s = String(remainder.prefix(upTo: idx))
             self.root.insert(content: s, at: relativeOffset, hasTrailingNewline: hasTrailingNewline)
             remainder = remainder.suffix(from: idx)
-            relativeOffset += s.nsLength
+            relativeOffset += s.utf16Length
         }
 
-        self.length += content.nsLength
+        self.length += content.utf16Length
 
     }
 

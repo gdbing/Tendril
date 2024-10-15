@@ -32,6 +32,11 @@ let package = Package(
                 .landscapeLeft,
                 .portraitUpsideDown(.when(deviceFamilies: [.pad]))
             ],
+            capabilities: [
+                .fileAccess(.userSelectedFiles, mode: .readWrite),
+                .incomingNetworkConnections(),
+                .outgoingNetworkConnections()
+            ],
             appCategory: .productivity
         )
     ],

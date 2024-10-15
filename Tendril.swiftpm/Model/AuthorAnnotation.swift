@@ -58,7 +58,7 @@ extension AuthorAnnotation {
         var nameRanges: [String: [NSRange]] = [:]
         content.enumerateAttribute(.author, in: NSRange(0..<content.length)) { value, range, _ in
             //Confirm the attribute value is actually a font
-            if let name = value as? String, let charRange = content.string.charRange(byteRange: range) {
+            if let name = value as? String, let charRange = content.string.charRange(utf16Range: range) {
                 if let existingRanges = nameRanges[name] {
                     nameRanges[name] = existingRanges + [charRange]
                 } else {
