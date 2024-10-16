@@ -14,6 +14,7 @@ struct UIKitDocumentView: UIViewRepresentable {
 
         let textContentStorage = NSTextContentStorage()
         let textLayoutManager = NSTextLayoutManager()
+        textLayoutManager.textSelectionNavigation.allowsNonContiguousRanges = true
         textContentStorage.addTextLayoutManager(textLayoutManager)
         let textContainer = NSTextContainer()
         textLayoutManager.textContainer = textContainer
