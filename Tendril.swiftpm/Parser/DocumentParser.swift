@@ -5,16 +5,18 @@ struct DocumentParser {
                                                          hashAnnotation: HashAnnotation,
                                                          authorAnnotations: [AuthorAnnotation],
                                                          remainder: any StringProtocol)? {
-        for idx in input.indices.reversed() { // annotation block is at the end, checking last indices first is a slight speedup for Moby Dick sized documents
-            let remainder = input.suffix(from: idx)
 
-            guard remainder.hasPrefix("\n\n") else {
+        var idx = input.indices.last // annotation block is at the end, checking last indices first is a slight speedup for Moby Dick sized documents
+        while idx != nil, idx != input.indices.first {
+            let remainder = input.suffix(from: idx!)
+
+            guard remainder.hasPrefix("\n\n"),
+                  let result = AnnotationBlockParser.consume(remainder.dropFirst(2)) else {
+                idx = input.index(idx!, offsetBy: -1)
                 continue
             }
-            guard let result = AnnotationBlockParser.consume(remainder.dropFirst(2)) else {
-                continue
-            }
-            let content = String(input.prefix(upTo:idx))
+            
+            let content = String(input.prefix(upTo:idx!))
             return (content: content,
                     hashAnnotation: result.hashAnnotation,
                     authorAnnotations: result.authorAnnotations,
