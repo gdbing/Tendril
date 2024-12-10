@@ -22,12 +22,12 @@ struct SettingsView: View {
                 }
                 Picker(selection: $settings.model, label: Text("Model")) {
                     Text("gpt-4o").tag("gpt-4o")
-                    Text("gpt-4o-2024-05-13").tag("gpt-4o-2024-05-13")
-                    Text("gpt-4o-2024-08-06").tag("gpt-4o-2024-08-06")
+//                    Text("gpt-4o-2024-05-13").tag("gpt-4o-2024-05-13")
+//                    Text("gpt-4o-2024-08-06").tag("gpt-4o-2024-08-06")
                     Text("gpt-4o-mini").tag("gpt-4o-mini")
-                    Text("claude-3-haiku").tag("claude-3-haiku-20240307")
-                    Text("claude-3-5-sonnet").tag("claude-3-5-sonnet-20240620")
-                    Text("claude-3-opus").tag("claude-3-opus-20240229")
+                    Text("claude-3-haiku").tag("claude-3-haiku")
+                    Text("claude-3-5-sonnet").tag("claude-3-5-sonnet")
+                    Text("claude-3-opus").tag("claude-3-opus")
                 }
                 Section(header: Text("Persona")) {
                     ForEach($settings.personae) { $persona in

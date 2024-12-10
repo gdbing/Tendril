@@ -37,7 +37,7 @@ class DocumentController: ObservableObject {
         tokenOutput = 0
         
         switch Settings().model {
-        case "claude-3-opus-20240229", "claude-3-5-sonnet-20240620", "claude-3-haiku-20240307":
+        case "claude-3-opus", "claude-3-5-sonnet", "claude-3-haiku":
             streamAnthropic(cache: cache)
         case "gpt-4o", "gpt-4o-mini", "gpt-4o-2024-08-06", "gpt-4o-2024-05-13":
             streamChatGPT()
@@ -64,9 +64,9 @@ class DocumentController: ObservableObject {
         
         guard let model: SwiftAnthropic.Model = {
             switch settings.model {
-            case "claude-3-opus-20240229": return .claude3Opus
-            case "claude-3-5-sonnet-20240620": return .claude35Sonnet
-            case "claude-3-haiku-20240307": return .claude3Haiku
+            case "claude-3-opus": return .claude3Opus
+            case "claude-3-5-sonnet": return .claude35Sonnet
+            case "claude-3-haiku": return .claude3Haiku
             default: return nil
             }
         }() else { return }
