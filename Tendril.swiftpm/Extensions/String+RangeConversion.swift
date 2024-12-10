@@ -34,8 +34,8 @@ extension String {
     func charRange(utf16Range: NSRange) -> NSRange? {
         guard let indexRange = Range(utf16Range, in: self) else { return nil }
 
-        let location = indexRange.lowerBound.utf16Offset(in: self)
-        let length   = indexRange.upperBound.utf16Offset(in: self) - location
+        let location = self.distance(from: self.startIndex, to: indexRange.lowerBound)
+        let length = self.distance(from: indexRange.lowerBound, to: indexRange.upperBound)
 
         return NSRange(location: location, length: length)
     }
